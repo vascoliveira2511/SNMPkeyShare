@@ -86,32 +86,35 @@ def generate_matrices(M, K, use_zs=True):
         
     return ZA, ZB, ZC, ZD if not use_zs else ZS, Z
 
-# Exemplo de uso:
 
-K = 10 # Tamanho da matriz
-M_string = "07994506586870582927"
-M = list(map(int, M_string))
-use_zs = False
+def main():
+    K = 10 # Tamanho da matriz
+    M_string = "07994506586870582927"
+    M = list(map(int, M_string))
+    use_zs = False
 
-if use_zs:
-    ZA, ZB, ZS, Z = generate_matrices(M, K, use_zs)
-    print("Matriz ZA:")
-    print_matrix(ZA)
-    print("\nMatriz ZB:")
-    print_matrix(ZB)
-    print("\nMatriz ZS:")
-    print_matrix(ZS)
-    print("\nMatriz Z:")
-    print_matrix(Z)
-else:
-    ZA, ZB, ZC, ZD, Z = generate_matrices(M, K, use_zs)
-    print("Matriz ZA:")
-    print_matrix(ZA)
-    print("\nMatriz ZB:")
-    print_matrix(ZB)
-    print("\nMatriz ZC:")
-    print_matrix(ZC)
-    print("\nMatriz ZD:")
-    print_matrix(ZD)
-    print("\nMatriz Z:")
-    print_matrix(Z)
+    if use_zs:
+        ZA, ZB, ZS, Z = generate_matrices(M, K, use_zs)
+        print("Matriz ZA:")
+        print_matrix(ZA)
+        print("\nMatriz ZB:")
+        print_matrix(ZB)
+        print("\nMatriz ZS:")
+        print_matrix(ZS)
+        print("\nMatriz Z:")
+        print_matrix(Z)
+    else:
+        ZA, ZB, ZC, ZD, Z = generate_matrices(M, K, use_zs)
+        print("Matriz ZA:")
+        print_matrix(ZA)
+        print("\nMatriz ZB:")
+        print_matrix(ZB)
+        print("\nMatriz ZC:")
+        print_matrix(ZC)
+        print("\nMatriz ZD:")
+        print_matrix(ZD)
+        print("\nMatriz Z:")
+        print_matrix(Z)
+        
+if __name__ == "__main__":
+    main()
