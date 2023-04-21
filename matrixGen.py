@@ -31,6 +31,9 @@ def rotate_vertical(matrix, col, n):
 
 # Função para gerar as matrizes ZA, ZB, ZC e ZD (ou ZS) e a matriz Z
 def generate_matrices(M, K, use_zs=True):
+    
+    """Seja M1 uma sequência com os primeiros K bytes de M e M2 outra sequência com os K bytes
+    restantes de M (ou seja, M = M1+M2);"""
     M1 = M[:K]
     M2 = M[K:]
 
@@ -50,12 +53,6 @@ def generate_matrices(M, K, use_zs=True):
     da esquerda para a direita, numa linha"""
     ZB = [transpose(rotate(M2, j))[0] for j in range(K)]
     ZB = list(map(list, zip(*ZB)))
-
-    """Criar uma matriz ZC de K x K bytes em que ZC[i,j] = random(ZA[i,j],0,255), em que a função
-    random(seed,min,max)1 retorna um número aleatório entre min e max usando a semente seed;
-    criar uma matriz ZD de K x K bytes em que ZD[i,j] = random(ZB[i,j],0,255); em alternativa pode
-    ser criada apenas uma matriz ZS de K x K bytes em que ZS[i,j] = random(S,0,255);"""
-    ZC = [[random.randint(0, 255) for _ in range(K)] for _ in range(K)]
 
     """Criar uma matriz ZC de K x K bytes em que ZC[i,j] = random(ZA[i,j],0,255), em que a função
     random(seed,min,max)1 retorna um número aleatório entre min e max usando a semente seed;
