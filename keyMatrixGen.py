@@ -1,5 +1,6 @@
 import random
 from collections import deque
+import time
 
 def random_with_seed(seed, min_val, max_val):
     random.seed(seed)
@@ -77,39 +78,68 @@ def generate_matrices(M, K, use_zs=True):
     ficheiro F)."""
     if use_zs:
         Z = [[ZS[i][j] ^ ZA[i][j] ^ ZB[i][j] for j in range(K)] for i in range(K)]
-        return ZA, ZB, ZS, Z
     else:
         Z = [[ZC[i][j] ^ ZD[i][j] ^ ZA[i][j] ^ ZB[i][j] for j in range(K)] for i in range(K)]
-        return ZA, ZB, ZC, ZD, Z
+    return Z
+    
+def process_Z(Z, T):
+    K = len(Z)
+    for i in range(K):
+        # 1. Atualizar a matriz Z de acordo com Zi* = rotate(Zi*,random(Z[i,0],0,K-1));
+        Z[i] = rotate(Z[i], random_with_seed(Z[i][0], 0, K - 1))
+
+    for j in range(K):
+        # 2. Atualizar a matriz Z de acordo com Z*j = rotate_vertical(Z*j,random(Z[0,j],0,K-1))
+        rotate_vertical(Z, j, random_with_seed(Z[0][j], 0, K - 1))
+
+    # Pausa por T milissegundos
+    time.sleep(T / 1000)
+    
+def generate_key(Z, N):
+    K = len(Z)
+    
+    # 2. Escolhe-se uma linha Zi* de Z, de tal forma que i = random(N+Z[0,0],0,K-1);
+    i = random_with_seed(N + Z[0][0], 0, K - 1)
+    Zi_star = Z[i]
+
+    # 3. Escolhe-se uma coluna Z*j de Z, de tal forma que j = random(Z[i,0],0,K-1);
+    j = random_with_seed(Z[i][0], 0, K - 1)
+    Zj_star = [Z[row][j] for row in range(K)]
+
+    # 4. Calcula-se a chave através da expressão C = xor(Zi*,transpose(Z*j));
+    C = [Zi_star[k] ^ Zj_star[k] for k in range(K)]
+
+    # Converter os valores em caracteres ASCII legíveis
+    C_ascii = "".join(chr(c % 75 + 48) for c in C)
+
+    return C_ascii
+
+def generate_random_K(min_val=5, max_val=15):
+    return random.randint(min_val, max_val)
+
+def generate_random_M_string(K, min_val=0, max_val=9):
+    return "".join([str(random.randint(min_val, max_val)) for _ in range(2 * K)])
+
 
 def main():
-    K = 10 # Tamanho da matriz
-    M_string = "07994506586870582927"
+    K = generate_random_K()
+    M_string = generate_random_M_string(K)
     M = list(map(int, M_string))
     use_zs = False
 
     if use_zs:
-        ZA, ZB, ZS, Z = generate_matrices(M, K, use_zs)
-        print("Matriz ZA:")
-        print_matrix(ZA)
-        print("\nMatriz ZB:")
-        print_matrix(ZB)
-        print("\nMatriz ZS:")
-        print_matrix(ZS)
-        print("\nMatriz Z:")
-        print_matrix(Z)
+        Z = generate_matrices(M, K, use_zs)
     else:
-        ZA, ZB, ZC, ZD, Z = generate_matrices(M, K, use_zs)
-        print("Matriz ZA:")
-        print_matrix(ZA)
-        print("\nMatriz ZB:")
-        print_matrix(ZB)
-        print("\nMatriz ZC:")
-        print_matrix(ZC)
-        print("\nMatriz ZD:")
-        print_matrix(ZD)
-        print("\nMatriz Z:")
-        print_matrix(Z)
+        Z = generate_matrices(M, K, use_zs)
+    
+    T = 1000  # Atualize a matriz Z a cada 1 segundo (1000 ms)
+    num_updates = 0
+    while True:
+        process_Z(Z, T)
+        num_updates += 1  # Atualize o contador
+        C = generate_key(Z, num_updates)
+        print("\nChave gerada C:")
+        print(C)
         
 if __name__ == "__main__":
     main()
