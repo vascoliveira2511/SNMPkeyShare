@@ -59,8 +59,7 @@ def generate_matrices(M, K, use_zs=True):
     criar uma matriz ZD de K x K bytes em que ZD[i,j] = random(ZB[i,j],0,255); em alternativa pode
     ser criada apenas uma matriz ZS de K x K bytes em que ZS[i,j] = random(S,0,255);"""
     if use_zs:
-        S = random.randint(0, 255)
-        ZS = [[random_with_seed(S, 0, 255) for _ in range(K)] for _ in range(K)]
+        ZS = [[random_with_seed(random.randint(0, 255), 0, 255) for _ in range(K)] for _ in range(K)]
     else:
         ZC = [[random_with_seed(ZA[i][j], 0, 255) for j in range(K)] for i in range(K)]
         ZD = [[random_with_seed(ZB[i][j], 0, 255) for j in range(K)] for i in range(K)]
@@ -78,11 +77,10 @@ def generate_matrices(M, K, use_zs=True):
     ficheiro F)."""
     if use_zs:
         Z = [[ZS[i][j] ^ ZA[i][j] ^ ZB[i][j] for j in range(K)] for i in range(K)]
+        return ZA, ZB, ZS, Z
     else:
         Z = [[ZC[i][j] ^ ZD[i][j] ^ ZA[i][j] ^ ZB[i][j] for j in range(K)] for i in range(K)]
-        
-    return ZA, ZB, ZC, ZD if not use_zs else ZS, Z
-
+        return ZA, ZB, ZC, ZD, Z
 
 def main():
     K = 10 # Tamanho da matriz
