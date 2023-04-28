@@ -127,12 +127,9 @@ def main():
     M = list(map(int, M_string))
     use_zs = False
 
-    if use_zs:
-        Z = generate_matrices(M, K, use_zs)
-    else:
-        Z = generate_matrices(M, K, use_zs)
+    Z = generate_matrices(M, K, use_zs)
     
-    T = 1000  # Atualize a matriz Z a cada 1 segundo (1000 ms)
+    T = 10000  # Atualize a matriz Z a cada 10 segundos (10000 ms)
     num_updates = 0
     while True:
         process_Z(Z, T)
