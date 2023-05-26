@@ -68,7 +68,7 @@ timeout = 10  # Escolha um valor apropriado para o tempo limite
 manager = SNMPKeyShareManager(timeout)
 
 ip = "127.0.0.1"
-port = 12345
+port = 161
 agent_address = (ip, port)
 
 # Preparando os dados da primitiva snmpkeyshare-get

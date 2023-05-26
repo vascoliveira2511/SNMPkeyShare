@@ -1,11 +1,31 @@
 import socket
 from SNMPKeySharePDU import SNMPKeySharePDU
+from snmpKeyShareMIB import *
+import time
+import configparser
+
+
+def read_config_file(file_path):
+    """
+    Lê o arquivo de configuração e retorna um dicionário com os parâmetros de configuração.
+    """
+    config = configparser.ConfigParser()
+    config.read(file_path)
+
+    # Extraindo os parâmetros de configuração
+    parameters = {
+        "udp_port": config.get("Network", "udp_port"),
+        # Adicione aqui outros parâmetros de configuração conforme necessário
+    }
+
+    return parameters
 
 
 class SNMPKeyShareAgent:
     def __init__(self, timeout=5):
         self.timeout = timeout
         self.last_request_time = {}
+        self.start_time = time.time()
 
     def snmpkeyshare_response(self, P, NW, W, is_set=False):
         if is_set:
@@ -43,8 +63,16 @@ class SNMPKeyShareAgent:
                 print(f"Tipo de primitiva desconhecido: {pdu.S}")
 
 
-ip = "127.0.0.1"
-port = 12345
+def main():
+    file_path = "config.ini"
+    config_parameters = read_config_file(file_path)
+    udp_port = config_parameters['udp_port']
+    print(f"O agente está a escutar na porta UDP: {udp_port}")
+    ip = "127.0.0.1"
+    port = udp_port
+    agent = SNMPKeyShareAgent()
+    agent.serve(ip, port)
 
-agent = SNMPKeyShareAgent()
-agent.serve(ip, port)
+
+if __name__ == "__main__":
+    main()
