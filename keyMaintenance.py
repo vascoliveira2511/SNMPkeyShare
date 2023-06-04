@@ -119,24 +119,3 @@ def generate_random_K(min_val=5, max_val=15):
 
 def generate_random_M_string(K, min_val=0, max_val=9):
     return "".join([str(random.randint(min_val, max_val)) for _ in range(2 * K)])
-
-
-def main():
-    K = generate_random_K()
-    M_string = generate_random_M_string(K)
-    M = list(map(int, M_string))
-    use_zs = False
-
-    Z = generate_matrices(M, K, use_zs)
-    
-    T = 10000  # Atualize a matriz Z a cada 10 segundos (10000 ms)
-    num_updates = 0
-    while True:
-        process_Z(Z, T)
-        num_updates += 1  # Atualize o contador
-        C = generate_key(Z, num_updates)
-        print("\nChave gerada C:")
-        print(C)
-        
-if __name__ == "__main__":
-    main()

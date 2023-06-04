@@ -64,41 +64,40 @@ class SNMPKeyShareManager:
                 return None
 
 
-timeout = 10  # Escolha um valor apropriado para o tempo limite
-manager = SNMPKeyShareManager(timeout)
+if __name__ == "__main__":
+    timeout = 10  # Escolha um valor apropriado para o tempo limite
+    manager = SNMPKeyShareManager(timeout)
 
-ip = "127.0.0.1"
-port = 161
-agent_address = (ip, port)
+    ip = "127.0.0.1"
+    port = 161
+    agent_address = (ip, port)
 
-# Preparando os dados da primitiva snmpkeyshare-get
-P = 1
-NL = 2
-L = [(1, 1), (2, 1)]
-
-# Enviando a primitiva snmpkeyshare-get
-get_pdu = manager.snmpkeyshare_get(P, NL, L, ip, port)
-
-with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-    udp_socket.sendto(str(get_pdu).encode(), agent_address)
-    response_data, _ = udp_socket.recvfrom(1024)
-    response_pdu = SNMPKeySharePDU.from_string(response_data.decode())
-
-print("Resposta snmpkeyshare-get recebida:")
-print(response_pdu)
-
-# Preparando os dados da primitiva snmpkeyshare-set
-P = 2
-NW = 2
-W = [(1, "novo_valor1"), (2, "novo_valor2")]
-
-# Enviando a primitiva snmpkeyshare-set
-set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)
-
-with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-    udp_socket.sendto(str(set_pdu).encode(), agent_address)
-    response_data, _ = udp_socket.recvfrom(1024)
-    response_pdu = SNMPKeySharePDU.from_string(response_data.decode())
-
-print("Resposta snmpkeyshare-set recebida:")
-print(response_pdu)
+    while True:
+        operation = input("Insira a operação desejada (get ou set): ")
+        if operation not in ['get', 'set']:
+            print("Operação inválida, tente novamente.")
+            continue
+        
+        P = int(input("Insira o identificador do pedido (P): "))
+        
+        if operation == 'get':
+            NL = int(input("Insira o número de instâncias desejadas (NL): "))
+            L = []
+            for _ in range(NL):
+                instance = int(input("Insira o identificador da instância: "))
+                N = int(input("Insira o valor de N: "))
+                L.append((instance, N))
+            get_pdu = manager.snmpkeyshare_get(P, NL, L, ip, port)
+            print("Resposta snmpkeyshare-get recebida:")
+            print(get_pdu)
+            
+        else:  # operation == 'set'
+            NW = int(input("Insira o número de instâncias a serem modificadas (NW): "))
+            W = []
+            for _ in range(NW):
+                instance = int(input("Insira o identificador da instância: "))
+                value = input("Insira o novo valor para a instância: ")
+                W.append((instance, value))
+            set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)
+            print("Resposta snmpkeyshare-set recebida:")
+            print(set_pdu)
