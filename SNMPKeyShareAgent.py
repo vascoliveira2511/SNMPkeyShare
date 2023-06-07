@@ -1,3 +1,4 @@
+import datetime
 import socket
 import threading
 import time
@@ -20,6 +21,7 @@ def read_config_file(file_path):
     return parameters
 
 class SNMPKeyShareAgent:
+
     def __init__(self, timeout=5, mib=None):
         self.timeout = timeout
         self.start_time = time.time()
@@ -41,18 +43,51 @@ class SNMPKeyShareAgent:
     def key_update_loop(self):
         while self.running:
             process_Z(self.Z, self.T)
-            self.num_updates += 1  
             self.generate_and_update_key()
+            self.expire_keys()
 
     def generate_and_update_key(self):
-        C = generate_key(self.Z, self.num_updates)
-        print("\nChave gerada C:")
-        print(C)
-        key_id = self.num_updates
-        entry = DataTableGeneratedKeysEntry(key_id)
-        entry.set("1.3.6.1.2.1.3.2.1.2", C)
-        self.mib.add_entry(entry)
-        self.mib.set("1.3.6.1.2.1.3.1", self.num_updates)  
+        if len(self.mib.get("1.3.6.1.2.1.3.2")) < self.mib.get("1.3.6.1.2.1.3.5"):  # Check if we have space for more keys
+            C = generate_key(self.Z, self.num_updates)
+            key_id = self.num_updates
+            entry = DataTableGeneratedKeysEntry(key_id)
+
+            # Set key value
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.2", C)
+
+            # Set KeyRequester
+            # The requester could be identified in some way, for instance, by IP address.
+            # Here I'll use a placeholder string.
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.3", "Requester Identification")  
+
+            # Set keyExpirationDate and keyExpirationTime
+            ttl = self.mib.get("1.3.6.1.2.1.3.6")  # Get the TTL for keys
+            expiration_timestamp = time.time() + ttl  # Current time + TTL
+            expiration_date = datetime.fromtimestamp(expiration_timestamp).strftime('%Y%m%d')  # Format as YY*104+MM*102+DD
+            expiration_time = datetime.fromtimestamp(expiration_timestamp).strftime('%H%M%S')  # Format as HH*104+MM*102+SS
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.4", int(expiration_date))  
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.5", int(expiration_time))
+
+            # Set keyVisibility to 0 (not visible) initially
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.6", 0)
+
+            # Add the entry to the MIB
+            self.mib.add_entry(entry)
+
+            # Update the number of valid keys in the MIB
+            self.mib.setAdmin("1.3.6.1.2.1.3.1", len(self.mib.entries))
+
+            # Increase the number of updates
+            self.num_updates += 1
+
+
+    def expire_keys(self):
+            current_time = time.time()
+            for entry in self.mib.get("1.3.6.1.2.1.3.2"):  # Create a copy of the list to iterate over
+                # Assuming keyExpirationDate and keyExpirationTime are in Unix timestamp
+                if current_time > entry["1.3.6.1.2.1.3.2.1.4"] + entry["1.3.6.1.2.1.3.2.1.5"]:
+                    self.mib.remove_entry(entry)
+            time.sleep(self.mib.V)  # Wait V seconds before checking again
 
     def get_uptime(self):
         return time.time() - self.start_time
@@ -93,7 +128,6 @@ def main():
     file_path = "config.ini"
     config_parameters = read_config_file(file_path)
     udp_port = int(config_parameters['udp_port'])
-    print(f"O agente está a escutar na porta UDP: {udp_port}")
     ip = "127.0.0.1"
     port = udp_port
     agent = SNMPKeyShareAgent()

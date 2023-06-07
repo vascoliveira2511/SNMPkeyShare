@@ -28,6 +28,9 @@ class SNMPKeyShareMIB:
             raise ValueError(f"O OID {oid} é de leitura apenas.")
         self.mib[oid] = value
 
+    def setAdmin(self, oid, value):
+        self.mib[oid] = value
+
     def add_entry(self, entry):
         self.mib["1.3.6.1.2.1.3.2"].append(entry)
 
@@ -50,6 +53,9 @@ class DataTableGeneratedKeysEntry:
     def set(self, oid, value):
         if oid in self.read_only_oids:
             raise ValueError(f"O OID {oid} é de leitura apenas.")
+        self.entry[oid] = value
+
+    def setAdmin(self, oid, value):
         self.entry[oid] = value
 
 
