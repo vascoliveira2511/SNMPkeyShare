@@ -27,7 +27,7 @@ class SNMPKeyShareAgent:
         self.start_time = time.time()
         self.mib = mib if mib is not None else SNMPKeyShareMIB()
         self.running = False
-        self.Z = generate_matrices(M, K, use_zs=False)  # substituir com seus parâmetros
+        self.Z = generate_matrices(M, K, use_zs=False) 
         self.num_updates = 0
         self.T = 10000  
 
@@ -75,7 +75,7 @@ class SNMPKeyShareAgent:
             self.mib.add_entry(entry)
 
             # Update the number of valid keys in the MIB
-            self.mib.setAdmin("1.3.6.1.2.1.3.1", len(self.mib.entries))
+            self.mib.setAdmin("1.3.6.1.2.1.3.1", len(self.mib.get("1.3.6.1.2.1.3.2")))
 
             # Increase the number of updates
             self.num_updates += 1
