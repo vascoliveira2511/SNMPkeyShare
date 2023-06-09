@@ -20,6 +20,10 @@ def read_config_file(file_path):
 
     return parameters
 
+def oid_tuple_to_string(oid_tuple):
+    return '.'.join(map(str, oid_tuple))
+
+
 class SNMPKeyShareAgent:
 
     def __init__(self, timeout=5, mib=None):
@@ -47,7 +51,7 @@ class SNMPKeyShareAgent:
             self.expire_keys()
 
     def generate_and_update_key(self):
-        if len(self.mib.get("1.3.6.1.2.1.3.2")) < self.mib.get("1.3.6.1.2.1.3.5"):  # Check if we have space for more keys
+        if len(self.mib.get("1.3.6.1.2.1.3.2")) < self.mib.get("1.3.6.1.2.1.1.5"):  # Check if we have space for more keys
             C = generate_key(self.Z, self.num_updates)
             key_id = self.num_updates
             entry = DataTableGeneratedKeysEntry(key_id)
@@ -61,7 +65,7 @@ class SNMPKeyShareAgent:
             entry.setAdmin("1.3.6.1.2.1.3.2.1.3", "Requester Identification")  
 
             # Set keyExpirationDate and keyExpirationTime
-            ttl = self.mib.get("1.3.6.1.2.1.3.6")  # Get the TTL for keys
+            ttl = self.mib.get("1.3.6.1.2.1.1.6")  # Get the TTL for keys
             expiration_timestamp = time.time() + ttl  # Current time + TTL
             expiration_date = datetime.fromtimestamp(expiration_timestamp).strftime('%Y%m%d')  # Format as YY*104+MM*102+DD
             expiration_time = datetime.fromtimestamp(expiration_timestamp).strftime('%H%M%S')  # Format as HH*104+MM*102+SS
@@ -85,22 +89,23 @@ class SNMPKeyShareAgent:
             current_time = time.time()
             for entry in self.mib.get("1.3.6.1.2.1.3.2"):  # Create a copy of the list to iterate over
                 # Assuming keyExpirationDate and keyExpirationTime are in Unix timestamp
-                if current_time > entry["1.3.6.1.2.1.3.2.1.4"] + entry["1.3.6.1.2.1.3.2.1.5"]:
+               	if current_time > entry.get("1.3.6.1.2.1.3.2.1.4") + entry.get("1.3.6.1.2.1.3.2.1.5"):
                     self.mib.remove_entry(entry)
-            time.sleep(self.mib.V)  # Wait V seconds before checking again
 
     def get_uptime(self):
         return time.time() - self.start_time
 
-    def snmpkeyshare_response(self, P, NW, W, is_set=False):
-        if is_set:
-            for oid, value in W:
+    def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
+        if Y == 2:  # SET operation
+            for oid, value in L_or_W:
                 self.mib.set(oid, value)
-        else:
-            R = [(oid, self.mib.get(oid)) for oid, _ in W]
+        elif Y == 1:  # GET operation
+            R = [(str(oid), self.mib.get(oid_tuple_to_string(oid))) for oid in L_or_W] # TODO N
             NR = len(R)
-            response_pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=0, NL_or_NW=NW, L_or_W=W, NR=NR, R=R)
+            response_pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=0, NL_or_NW=NL_or_NW, L_or_W=L_or_W, NR=NR, R=R)
             return response_pdu
+        else:
+            raise ValueError(f"Unrecognized operation type: {Y}")
 
     def serve(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -112,17 +117,8 @@ class SNMPKeyShareAgent:
             data, addr = sock.recvfrom(1024)
             pdu = SNMPKeySharePDU.from_string(data.decode())
             print(f"Recebido PDU de {addr}: {pdu}")
-
-            if pdu.S == 1:  
-                response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NW, pdu.W, is_set=True)
-                sock.sendto(str(response_pdu).encode(), addr)
-
-            elif pdu.S == 0:  
-                response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL, pdu.L, is_set=False)
-                sock.sendto(str(response_pdu).encode(), addr)
-
-            else:
-                print(f"Tipo de primitiva desconhecido: {pdu.S}")
+            response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
+            sock.sendto(str(response_pdu).encode(), addr)
 
 def main():
     file_path = "config.ini"

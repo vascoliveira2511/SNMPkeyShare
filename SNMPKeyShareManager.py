@@ -84,7 +84,7 @@ if __name__ == "__main__":
             NL = int(input("Insira o número de instâncias desejadas (NL): "))
             L = []
             for _ in range(NL):
-                instance = int(input("Insira o identificador da instância: "))
+                instance = input("Insira o identificador da instância: ")
                 N = int(input("Insira o valor de N: "))
                 L.append((instance, N))
             get_pdu = manager.snmpkeyshare_get(P, NL, L, ip, port)
