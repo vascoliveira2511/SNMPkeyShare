@@ -20,9 +20,6 @@ def read_config_file(file_path):
 
     return parameters
 
-def oid_tuple_to_string(oid_tuple):
-    return '.'.join(map(str, oid_tuple))
-
 
 class SNMPKeyShareAgent:
 
@@ -47,7 +44,6 @@ class SNMPKeyShareAgent:
     def key_update_loop(self):
         while self.running:
             process_Z(self.Z, self.T)
-            self.generate_and_update_key()
             self.expire_keys()
 
     def generate_and_update_key(self):
@@ -96,16 +92,48 @@ class SNMPKeyShareAgent:
         return time.time() - self.start_time
 
     def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
+        errors = []
+        R = []
+        NR = 0
+        NW = 0
+        W = []
+
         if Y == 2:  # SET operation
             for oid, value in L_or_W:
-                self.mib.set(oid, value)
+                try:
+                    self.mib.set(str(oid), value)
+                    NW += 1
+                    W.append((str(oid), value))
+                except Exception as e:
+                    errors.append((str(oid), str(e)))
         elif Y == 1:  # GET operation
-            R = [(str(oid), self.mib.get(oid_tuple_to_string(oid))) for oid in L_or_W] # TODO N
-            NR = len(R)
-            response_pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=0, NL_or_NW=NL_or_NW, L_or_W=L_or_W, NR=NR, R=R)
-            return response_pdu
+            for oid in L_or_W:
+                try:
+                    value = self.mib.get(str(oid))
+                    if value is not None:
+                        R.append((str(oid), value))
+                        NW += 1
+                        W.append((str(oid), value))
+                    else:
+                        errors.append((str(oid), 'No value could be retrieved'))
+                except Exception as e:
+                    errors.append((str(oid), str(e)))
         else:
             raise ValueError(f"Unrecognized operation type: {Y}")
+
+        if not errors:
+            errors.append((0, 0)) # No errors found
+            NR = 1
+
+        if not W:
+            W.append((0, 0)) # No valid instance values to be returned
+            NW = 1
+
+        NR = len(errors)
+
+        response_pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=0, NL_or_NW=NW, L_or_W=W, NR=NR, R=errors)
+
+        return response_pdu
 
     def serve(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -115,10 +143,11 @@ class SNMPKeyShareAgent:
 
         while True:
             data, addr = sock.recvfrom(1024)
+            print(f"DEBUG: Recebido dados: {data.decode()}")
             pdu = SNMPKeySharePDU.from_string(data.decode())
             print(f"Recebido PDU de {addr}: {pdu}")
             response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
-            sock.sendto(str(response_pdu).encode(), addr)
+            sock.sendto(response_pdu.__str__().encode(), addr)
 
 def main():
     file_path = "config.ini"

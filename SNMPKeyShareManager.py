@@ -25,6 +25,7 @@ class SNMPKeyShareManager:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
             pdu_str = str(pdu)
+            print(f"DEBUG: Enviando PDU: {pdu_str}")
             udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
 
             try:
@@ -51,6 +52,7 @@ class SNMPKeyShareManager:
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
             pdu_str = str(pdu)
+            print(f"DEBUG: Enviando PDU: {pdu_str}")
             udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
 
             try:
