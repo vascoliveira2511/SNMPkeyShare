@@ -28,13 +28,7 @@ class SNMPKeyShareMIB:
         return '.'.join(map(str, oid_tuple))
     
     def get(self, oid):
-        # Se o OID é uma tupla, converte para string
-        if isinstance(oid, tuple):
-            oid = SNMPKeyShareMIB.oid_tuple_to_string(oid)
-        
-        print(f"Getting value for OID {oid}")
         value = self.mib[oid]
-        print(f"Value is {value}")
         return value
 
     def set(self, oid, value):
