@@ -24,14 +24,12 @@ class SNMPKeyShareManager:
         # Enviar o PDU para o agente utilizando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
-            pdu_str = str(pdu)
-            print(f"DEBUG: Enviando PDU: {pdu_str}")
+            pdu_str = pdu
             udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
 
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_pdu = SNMPKeySharePDU.from_string(
-                    response_data.decode())
+                response_pdu = SNMPKeySharePDU(response_data.decode())
                 return response_pdu
             except socket.timeout:
                 print(
@@ -39,7 +37,7 @@ class SNMPKeyShareManager:
                 return None
 
     def snmpkeyshare_set(self, P, NW, W, agent_ip, agent_port):
-
+        
         if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.timeout:
             raise ValueError(
                 f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
@@ -51,14 +49,12 @@ class SNMPKeyShareManager:
         # Enviar o PDU para o agente usando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
-            pdu_str = str(pdu)
-            print(f"DEBUG: Enviando PDU: {pdu_str}")
+            pdu_str = pdu
             udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
 
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_pdu = SNMPKeySharePDU.from_string(
-                    response_data.decode())
+                response_pdu = SNMPKeySharePDU(response_data.decode())
                 return response_pdu
             except socket.timeout:
                 print(

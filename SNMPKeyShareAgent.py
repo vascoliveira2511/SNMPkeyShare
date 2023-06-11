@@ -83,57 +83,69 @@ class SNMPKeyShareAgent:
 
     def expire_keys(self):
             current_time = time.time()
-            for entry in self.mib.get("1.3.6.1.2.1.3.2"):  # Create a copy of the list to iterate over
+            for entry in self.mib.get("1.3.6.1.2.1.3.2.1"):  # Create a copy of the list to iterate over
                 # Assuming keyExpirationDate and keyExpirationTime are in Unix timestamp
-               	if current_time > entry.get("1.3.6.1.2.1.3.2.1.4") + entry.get("1.3.6.1.2.1.3.2.1.5"):
+               	if current_time > entry.get("1.3.6.1.2.1.3.2.1.4.0") + entry.get("1.3.6.1.2.1.3.2.1.5.0"):
                     self.mib.remove_entry(entry)
 
     def get_uptime(self):
         return time.time() - self.start_time
 
     def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
-        errors = []
+        
+        # L = GET
+        # W = SET
+
         R = []
         NR = 0
-        NW = 0
-        W = []
 
-        if Y == 2:  # SET operation
-            for oid, value in L_or_W:
+        # Processar o PDU recebido e gerar a resposta
+
+        # Se o PDU recebido for um snmpkeyshare-get
+
+        if Y == 1:
+            L = []
+            for i in range(NL_or_NW):
+                oid = L_or_W[i][0]
                 try:
-                    self.mib.set(str(oid), value)
-                    NW += 1
-                    W.append((str(oid), value))
-                except Exception as e:
-                    errors.append((str(oid), str(e)))
-        elif Y == 1:  # GET operation
-            for oid in L_or_W:
+                    value = self.mib.get(oid)
+                    L.append((oid, value))
+                except ValueError as e:
+                    R.append((oid, e))
+                    NR += 1
+            if NR == 0:
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[(0, 0)])
+            else:
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=R)
+                
+        # Se o PDU recebido for um snmpkeyshare-set
+
+        elif Y == 2:
+            W = []
+            for i in range(NL_or_NW):
+                oid = L_or_W[i][0]
+                value = L_or_W[i][1]
                 try:
-                    value = self.mib.get(str(oid))
-                    if value is not None:
-                        R.append((str(oid), value))
-                        NW += 1
-                        W.append((str(oid), value))
-                    else:
-                        errors.append((str(oid), 'No value could be retrieved'))
-                except Exception as e:
-                    errors.append((str(oid), str(e)))
+                    self.mib.set(oid, value)
+                    W.append((oid, value))
+                except ValueError as e:
+                    R.append((oid, e))
+                    NR += 1
+            if NR == 0:
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=[(0, 0)])
+            else:
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
+            
+        # Se o PDU recebido for um snmpkeyshare-response
+
+        elif Y == 0:
+            return None
+        
+        # Se o PDU recebido for inválido
+
         else:
-            raise ValueError(f"Unrecognized operation type: {Y}")
+            raise ValueError(f"O valor de Y ({Y}) é inválido.")
 
-        if not errors:
-            errors.append((0, 0)) # No errors found
-            NR = 1
-
-        if not W:
-            W.append((0, 0)) # No valid instance values to be returned
-            NW = 1
-
-        NR = len(errors)
-
-        response_pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=0, NL_or_NW=NW, L_or_W=W, NR=NR, R=errors)
-
-        return response_pdu
 
     def serve(self, ip, port):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -143,11 +155,11 @@ class SNMPKeyShareAgent:
 
         while True:
             data, addr = sock.recvfrom(1024)
-            print(f"DEBUG: Recebido dados: {data.decode()}")
-            pdu = SNMPKeySharePDU.from_string(data.decode())
+            pdu = SNMPKeySharePDU(data.decode())
+            pdu = pdu
             print(f"Recebido PDU de {addr}: {pdu}")
             response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
-            sock.sendto(response_pdu.__str__().encode(), addr)
+            sock.sendto(response_pdu, addr)
 
 def main():
     file_path = "config.ini"
