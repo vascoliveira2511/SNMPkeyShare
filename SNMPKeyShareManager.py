@@ -24,12 +24,14 @@ class SNMPKeyShareManager:
         # Enviar o PDU para o agente utilizando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
-            pdu_str = pdu
-            udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
-
+            pdu = pdu.serialize()
+            pdu = pdu.encode()
+            udp_socket.sendto(pdu, (agent_ip, agent_port))
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_pdu = SNMPKeySharePDU(response_data.decode())
+                response_data = response_data.decode()
+                response_pdu = SNMPKeySharePDU()
+                response_pdu.deserialize(response_data)
                 return response_pdu
             except socket.timeout:
                 print(
@@ -49,12 +51,14 @@ class SNMPKeyShareManager:
         # Enviar o PDU para o agente usando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
-            pdu_str = pdu
-            udp_socket.sendto(pdu_str.encode(), (agent_ip, agent_port))
+            pdu = pdu.serialize()
+            pdu = pdu.encode()
+            udp_socket.sendto(pdu, (agent_ip, agent_port))
 
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_pdu = SNMPKeySharePDU(response_data.decode())
+                response_pdu = SNMPKeySharePDU()
+                response_pdu.deserialize(response_data.decode())
                 return response_pdu
             except socket.timeout:
                 print(
@@ -87,7 +91,7 @@ if __name__ == "__main__":
                 L.append((instance, N))
             get_pdu = manager.snmpkeyshare_get(P, NL, L, ip, port)
             print("Resposta snmpkeyshare-get recebida:")
-            print(get_pdu)
+            print(get_pdu.__str__())
             
         else:  # operation == 'set'
             NW = int(input("Insira o número de instâncias a serem modificadas (NW): "))
@@ -98,4 +102,4 @@ if __name__ == "__main__":
                 W.append((instance, value))
             set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)
             print("Resposta snmpkeyshare-set recebida:")
-            print(set_pdu)
+            print(set_pdu.__str__())

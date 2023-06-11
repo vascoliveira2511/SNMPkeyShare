@@ -106,6 +106,8 @@ class SNMPKeyShareAgent:
         if Y == 1:
             L = []
             for i in range(NL_or_NW):
+                print(L_or_W[i])
+            for i in range(NL_or_NW):
                 oid = L_or_W[i][0]
                 try:
                     value = self.mib.get(oid)
@@ -114,7 +116,7 @@ class SNMPKeyShareAgent:
                     R.append((oid, e))
                     NR += 1
             if NR == 0:
-                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[(0, 0)])
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
             else:
                 return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=R)
                 
@@ -132,7 +134,7 @@ class SNMPKeyShareAgent:
                     R.append((oid, e))
                     NR += 1
             if NR == 0:
-                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=[(0, 0)])
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
             else:
                 return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
             
@@ -155,10 +157,15 @@ class SNMPKeyShareAgent:
 
         while True:
             data, addr = sock.recvfrom(1024)
-            pdu = SNMPKeySharePDU(data.decode())
-            pdu = pdu
-            print(f"Recebido PDU de {addr}: {pdu}")
+
+            pdu = SNMPKeySharePDU()
+            pdu.deserialize(data.decode())
+
             response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
+            
+            response_pdu = response_pdu.serialize()
+            response_pdu = response_pdu.encode()
+
             sock.sendto(response_pdu, addr)
 
 def main():
