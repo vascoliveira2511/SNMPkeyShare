@@ -1,6 +1,4 @@
-import re
-import socket
-import time
+import pickle
 
 
 class SNMPKeySharePDU:
@@ -20,32 +18,13 @@ class SNMPKeySharePDU:
         self.R = R  # Lista de erros e valores associados
 
     def serialize(self):
-        """Serializar o PDU para uma string"""
-        return "-".join([
-            str(self.S),
-            str(self.NS),
-            ','.join(self.Q),
-            str(self.P),
-            str(self.Y),
-            str(self.NL_or_NW),
-            ','.join(map(str, self.L_or_W)), 
-            str(self.NR),
-            ','.join(map(str, self.R)),
-        ])
+        """Serializar o PDU para uma string usando pickle"""
+        return pickle.dumps(self)
 
-    def deserialize(self, pdu_str):
-        """Deserializar uma string para um PDU"""
-        parts = pdu_str.split("-")
-
-        self.S = int(parts[0])
-        self.NS = int(parts[1])
-        self.Q = parts[2].split(',') if parts[2] else []
-        self.P = int(parts[3])
-        self.Y = int(parts[4])
-        self.NL_or_NW = int(parts[5])
-        self.L_or_W = [part for part in parts[6].split(',')] if parts[6] else []
-        self.NR = int(parts[7])
-        self.R = [part for part in parts[8].split(',')] if parts[8] else []
+    @staticmethod
+    def deserialize(data):
+        """Deserializar uma string para um PDU usando pickle"""
+        return pickle.loads(data)
 
     def __str__(self):
         return f"SNMPKeySharePDU(S={self.S}, NS={self.NS}, Q={self.Q}, P={self.P}, Y={self.Y}, NL_or_NW={self.NL_or_NW}, L_or_W={self.L_or_W}, NR={self.NR}, R={self.R})"

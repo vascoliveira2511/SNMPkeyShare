@@ -1,3 +1,4 @@
+import pickle
 import socket
 import time
 from SNMPKeySharePDU import SNMPKeySharePDU
@@ -18,22 +19,27 @@ class SNMPKeyShareManager:
                 f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
 
         self.last_request_time[P] = time.time()
+
         pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=1,
                               NL_or_NW=NL, L_or_W=L, NR=0, R=[])
 
         # Enviar o PDU para o agente utilizando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
+
             udp_socket.settimeout(self.timeout)
-            pdu = pdu.serialize()
-            pdu = pdu.encode()
+            
+            pdu = pickle.dumps(pdu)
             udp_socket.sendto(pdu, (agent_ip, agent_port))
+
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_data = response_data.decode()
-                response_pdu = SNMPKeySharePDU()
-                response_pdu.deserialize(response_data)
+
+                response_pdu = pickle.loads(response_data)
+
                 return response_pdu
+            
             except socket.timeout:
+
                 print(
                     f"O agente não respondeu no intervalo de tempo {self.timeout} segundos.")
                 return None
@@ -51,15 +57,17 @@ class SNMPKeyShareManager:
         # Enviar o PDU para o agente usando comunicação UDP
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
             udp_socket.settimeout(self.timeout)
-            pdu = pdu.serialize()
-            pdu = pdu.encode()
+
+            pdu = pickle.dumps(pdu)
             udp_socket.sendto(pdu, (agent_ip, agent_port))
 
             try:
                 response_data, _ = udp_socket.recvfrom(1024)
-                response_pdu = SNMPKeySharePDU()
-                response_pdu.deserialize(response_data.decode())
+
+                response_pdu = pickle.loads(response_data)
+
                 return response_pdu
+            
             except socket.timeout:
                 print(
                     f"O agente não respondeu no intervalo de tempo {self.timeout} segundos.")
@@ -97,7 +105,7 @@ if __name__ == "__main__":
             NW = int(input("Insira o número de instâncias a serem modificadas (NW): "))
             W = []
             for _ in range(NW):
-                instance = int(input("Insira o identificador da instância: "))
+                instance = input("Insira o identificador da instância: ")
                 value = input("Insira o novo valor para a instância: ")
                 W.append((instance, value))
             set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)

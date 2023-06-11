@@ -3,6 +3,7 @@ import socket
 import threading
 import time
 import configparser
+import pickle
 from SNMPKeySharePDU import SNMPKeySharePDU
 from MIB import *
 
@@ -44,38 +45,43 @@ class SNMPKeyShareAgent:
     def key_update_loop(self):
         while self.running:
             process_Z(self.Z, self.T)
+            self.generate_and_update_key()
+            print("Key updated")
             self.expire_keys()
 
     def generate_and_update_key(self):
-        if len(self.mib.get("1.3.6.1.2.1.3.2")) < self.mib.get("1.3.6.1.2.1.1.5"):  # Check if we have space for more keys
+        if len(self.mib.get("1.3.6.1.2.1.3.2.0")) < self.mib.get("1.3.6.1.2.1.1.0"):  # Check if we have space for more keys
             C = generate_key(self.Z, self.num_updates)
             key_id = self.num_updates
             entry = DataTableGeneratedKeysEntry(key_id)
 
             # Set key value
-            entry.setAdmin("1.3.6.1.2.1.3.2.1.2", C)
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.2.0", C)
+
+            print(f"Key {key_id} generated")
+            print(f"Key value: {C}")
 
             # Set KeyRequester
             # The requester could be identified in some way, for instance, by IP address.
             # Here I'll use a placeholder string.
-            entry.setAdmin("1.3.6.1.2.1.3.2.1.3", "Requester Identification")  
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.3.0", "Requester Identification")  
 
             # Set keyExpirationDate and keyExpirationTime
-            ttl = self.mib.get("1.3.6.1.2.1.1.6")  # Get the TTL for keys
+            ttl = self.mib.get("1.3.6.1.2.1.1.6.0")  # Get the TTL for keys
             expiration_timestamp = time.time() + ttl  # Current time + TTL
             expiration_date = datetime.fromtimestamp(expiration_timestamp).strftime('%Y%m%d')  # Format as YY*104+MM*102+DD
             expiration_time = datetime.fromtimestamp(expiration_timestamp).strftime('%H%M%S')  # Format as HH*104+MM*102+SS
-            entry.setAdmin("1.3.6.1.2.1.3.2.1.4", int(expiration_date))  
-            entry.setAdmin("1.3.6.1.2.1.3.2.1.5", int(expiration_time))
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.4.0", int(expiration_date))  
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.5.0", int(expiration_time))
 
             # Set keyVisibility to 0 (not visible) initially
-            entry.setAdmin("1.3.6.1.2.1.3.2.1.6", 0)
+            entry.setAdmin("1.3.6.1.2.1.3.2.1.6.0", 0)
 
             # Add the entry to the MIB
             self.mib.add_entry(entry)
 
             # Update the number of valid keys in the MIB
-            self.mib.setAdmin("1.3.6.1.2.1.3.1", len(self.mib.get("1.3.6.1.2.1.3.2")))
+            self.mib.setAdmin("1.3.6.1.2.1.3.1.0", len(self.mib.get("1.3.6.1.2.1.3.2.0")))
 
             # Increase the number of updates
             self.num_updates += 1
@@ -134,7 +140,7 @@ class SNMPKeyShareAgent:
                     R.append((oid, e))
                     NR += 1
             if NR == 0:
-                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
+                return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=[])
             else:
                 return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
             
@@ -158,13 +164,13 @@ class SNMPKeyShareAgent:
         while True:
             data, addr = sock.recvfrom(1024)
 
-            pdu = SNMPKeySharePDU()
-            pdu.deserialize(data.decode())
+            # Usar pickle para desserializar os dados
+            pdu = pickle.loads(data)
 
             response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
             
-            response_pdu = response_pdu.serialize()
-            response_pdu = response_pdu.encode()
+            # Usar pickle para serializar o response_pdu
+            response_pdu = pickle.dumps(response_pdu)
 
             sock.sendto(response_pdu, addr)
 
