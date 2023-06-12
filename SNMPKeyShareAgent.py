@@ -81,7 +81,7 @@ class SNMPKeyShareAgent:
             self.mib.add_entry(entry)
 
             # Update the number of valid keys in the MIB
-            self.mib.setAdmin("1.3.6.1.2.1.3.1.0", len(self.mib.get("1.3.6.1.2.1.3.2.0")))
+            self.mib.setAdmin("1.3.6.1.2.1.3.1.0", len(self.mib.get("1.3.6.1.2.1.3.2.1")))
 
             # Increase the number of updates
             self.num_updates += 1
@@ -111,8 +111,6 @@ class SNMPKeyShareAgent:
 
         if Y == 1:
             L = []
-            for i in range(NL_or_NW):
-                print(L_or_W[i])
             for i in range(NL_or_NW):
                 oid = L_or_W[i][0]
                 try:
