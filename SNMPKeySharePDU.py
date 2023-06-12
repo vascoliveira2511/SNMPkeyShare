@@ -27,4 +27,22 @@ class SNMPKeySharePDU:
         return pickle.loads(data)
 
     def __str__(self):
-        return f"SNMPKeySharePDU(S={self.S}, NS={self.NS}, Q={self.Q}, P={self.P}, Y={self.Y}, NL_or_NW={self.NL_or_NW}, L_or_W={self.L_or_W}, NR={self.NR}, R={self.R})"
+        return f"""
+        S  (Security Model):          {self.S}
+        NS (Number of SM parameters): {self.NS}
+        Q  (SM Parameter list):       {self.Q}
+        
+        P  (Request ID):              {self.P}
+        Y  (Primitive Type):          {self.Y} ({
+            "Response" if self.Y == 0 else
+            "Get" if self.Y == 1 else
+            "Set" if self.Y == 2 else
+            "Unknown"
+        })
+        
+        NL/NW (Number of elements):   {self.NL_or_NW}
+        L/W   (Instance list):        {self.L_or_W}
+        
+        NR    (Number of errors):     {self.NR}
+        R     (Error list):           {self.R}
+        """
