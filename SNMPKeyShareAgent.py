@@ -45,9 +45,11 @@ class SNMPKeyShareAgent:
     def key_update_loop(self):
         while self.running:
             process_Z(self.Z, self.T)
+            """	
             self.generate_and_update_key()
             print("Key updated")
             self.expire_keys()
+            """
 
     def generate_and_update_key(self):
         if len(self.mib.get("1.3.6.1.2.1.3.2.0")) < self.mib.get("1.3.6.1.2.1.1.0"):  # Check if we have space for more keys
