@@ -46,7 +46,28 @@ class SNMPKeyShareMIB:
 			raise ValueError(f"O OID {oid} não existe.")
 		value = self.mib[oid]
 		return value
+	
+	def get_next(self, oid):
 
+		"""Retorna o próximo OID e seu valor"""
+
+		if oid not in self.mib:
+			raise ValueError(f"O OID {oid} não existe.")
+
+		# Obter lista de chaves
+		keys = list(self.mib.keys())
+
+		# Obter o índice do OID fornecido
+		idx = keys.index(oid)
+
+		# Verificar se o OID fornecido é o último na lista
+		if idx == len(keys) - 1:
+			raise ValueError(f"O OID {oid} é o último OID na MIB.") #TODO limitar o número de erros
+
+		# Retornar o próximo OID e seu valor
+		next_oid = keys[idx + 1]
+		return next_oid, self.mib[next_oid]
+		
 	def set(self, oid, value):
 
 		"""Define o valor de um OID"""

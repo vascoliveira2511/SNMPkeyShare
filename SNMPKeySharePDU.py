@@ -40,21 +40,21 @@ class SNMPKeySharePDU:
 		"""Representação em string do PDU"""
 
 		return f"""
-		S  (Security Model):          {self.S}
-		NS (Number of SM parameters): {self.NS}
-		Q  (SM Parameter list):       {self.Q}
+		S  (Modelo de segurança):         {self.S}
+		NS (Número de parâmetros SM):     {self.NS}
+		Q  (Lista de parâmetros SM):      {self.Q}
 		
-		P  (Request ID):              {self.P}
-		Y  (Primitive Type):          {self.Y} ({
+		P  (Id do pedido):                {self.P}
+		Y  (Tipo de Primitiva):           {self.Y} ({
 			"Response" if self.Y == 0 else
 			"Get" if self.Y == 1 else
 			"Set" if self.Y == 2 else
 			"Unknown"
 		})
 		
-		NL/NW (Number of elements):   {self.NL_or_NW}
-		L/W   (Instance list):        {self.L_or_W}
+		NL/NW (Número de instâncias):     {self.NL_or_NW}
+		L/W   (Lista de instâncias):      {self.L_or_W}
 		
-		NR    (Number of errors):     {self.NR}
-		R     (Error list):           {self.R}
+		NR    (Número de erros):     	  {self.NR}
+		R     (Lista de erros):           {self.R}
 		"""

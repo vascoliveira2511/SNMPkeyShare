@@ -147,14 +147,29 @@ class SNMPKeyShareAgent:
 
 		if Y == 1:
 			L = []
-			for i in range(NL_or_NW):
-				oid = L_or_W[i][0]
-				try:
-					value = self.mib.get(oid)
-					L.append((oid, value))
-				except ValueError as e:
-					R.append((oid, e))
-					NR += 1
+			for pair in L_or_W:
+				oid, n = pair
+				if n == 0:
+					try:
+						value = self.mib.get(oid)
+						L.append((oid, value))
+					except ValueError as e:
+						R.append((oid, e))
+						NR += 1
+				else:
+					try:
+						value = self.mib.get(oid)
+						L.append((oid, value))
+					except ValueError as e:
+						R.append((oid, e))
+						NR += 1
+					for i in range(n):
+						try:
+							oid, value = self.mib.get_next(oid)
+							L.append((oid, value))
+						except ValueError as e:
+							R.append((oid, e))
+							NR += 1
 			if NR == 0:
 				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
 			else:
@@ -164,9 +179,8 @@ class SNMPKeyShareAgent:
 
 		elif Y == 2:
 			W = []
-			for i in range(NL_or_NW):
-				oid = L_or_W[i][0]
-				value = L_or_W[i][1]
+			for pair in L_or_W:
+				oid, value = pair
 				try:
 					self.mib.set(oid, value)
 					W.append((oid, value))

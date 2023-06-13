@@ -104,7 +104,10 @@ def main():
 			L = []
 			for _ in range(NL):
 				instance = input("Insira o identificador da instância: ")
-				N = int(input("Insira o valor de N: "))  # TODO
+				N = int(input("Insira o valor de N: "))
+				if N < 0:
+					print("O valor de N tem de ser maior ou igual a 0.")
+					continue
 				L.append((instance, N))
 			get_pdu = manager.snmpkeyshare_get(P, NL, L, ip, port)
 			print("Resposta snmpkeyshare-get recebida:")
