@@ -15,6 +15,9 @@ M = list(map(int, M_string))
 
 
 def read_config_file(file_path):
+
+	"""Lê o ficheiro de configuração e retorna um dicionário com os parâmetros"""
+
 	config = configparser.ConfigParser()
 	config.read(file_path)
 
@@ -27,7 +30,12 @@ def read_config_file(file_path):
 
 class SNMPKeyShareAgent:
 
+	"""Classe que representa um agente SNMPKeyShare"""
+
 	def __init__(self, timeout=5, mib=None):
+
+		"""Construtor da classe"""
+
 		self.key_update_thread = None
 		self.timeout = timeout
 		self.start_time = time.time()
@@ -38,15 +46,24 @@ class SNMPKeyShareAgent:
 		self.T = 10000
 
 	def start_key_update_thread(self):
+
+		"""Inicia a thread que atualiza as chaves"""
+
 		self.running = True
 		self.key_update_thread = threading.Thread(target=self.key_update_loop)
 		self.key_update_thread.start()
 
 	def stop_key_update_thread(self):
+
+		"""Para a thread que atualiza as chaves"""
+
 		self.running = False
 		self.key_update_thread.join()
 
 	def key_update_loop(self):
+
+		"""Loop que atualiza as chaves"""
+
 		while self.running:
 			process_Z(self.Z, self.T)
 			"""	
@@ -56,6 +73,9 @@ class SNMPKeyShareAgent:
 			"""
 
 	def generate_and_update_key(self):
+
+		"""Gera uma nova chave e atualiza a MIB"""
+
 		if len(self.mib.get("1.3.6.1.2.1.3.2.0")) < self.mib.get(
 				"1.3.6.1.2.1.1.0"):  # Check if we have space for more keys
 			C = generate_key(self.Z, self.num_updates)
@@ -96,6 +116,9 @@ class SNMPKeyShareAgent:
 			self.num_updates += 1
 
 	def expire_keys(self):
+
+		"""Remove as chaves expiradas da MIB"""
+
 		current_time = time.time()
 		for entry in self.mib.get("1.3.6.1.2.1.3.2.1"):  # Create a copy of the list to iterate over
 			# Assuming keyExpirationDate and keyExpirationTime are in Unix timestamp
@@ -103,9 +126,14 @@ class SNMPKeyShareAgent:
 				self.mib.remove_entry(entry)
 
 	def get_uptime(self):
+		
+		"""Retorna o tempo de atividade do agente"""
+
 		return time.time() - self.start_time
 
 	def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
+
+		"""Processa um PDU SNMPKeyShare e retorna a resposta"""
 
 		# L = GET
 		# W = SET
@@ -161,6 +189,9 @@ class SNMPKeyShareAgent:
 			raise ValueError(f"O valor de Y ({Y}) é inválido.")
 
 	def serve(self, ip, port):
+
+		"""Inicia o agente SNMPKeyShare"""
+
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((ip, port))
 
@@ -181,6 +212,9 @@ class SNMPKeyShareAgent:
 
 
 def main():
+
+	"""Função principal"""
+
 	file_path = "config.ini"
 	config_parameters = read_config_file(file_path)
 	udp_port = int(config_parameters['udp_port'])
@@ -193,4 +227,5 @@ def main():
 
 
 if __name__ == "__main__":
+
 	main()

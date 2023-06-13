@@ -4,40 +4,57 @@ import time
 
 
 def random_with_seed(seed, min_val, max_val):
+
+	"""Função que retorna um número aleatório entre min_val e max_val usando a semente seed"""
+
 	random.seed(seed)
 	return random.randint(min_val, max_val)
 
 
 def print_matrix(matrix):
+
+	"""Função para imprimir uma matriz de forma formatada"""
+
 	for row in matrix:
 		formatted_row = " ".join([f"{cell:3}" for cell in row])
 		print(formatted_row)
 
 
 def transpose(M):
+
+	"""Função para transpor uma matriz"""
+
 	if isinstance(M[0], list):
 		return [item for sublist in M for item in sublist]
 	else:
 		return [[M[i] for i in range(len(M))]]
 
 
-# Função para rotacionar uma lista n posições para a direita
 def rotate(s, n):
+
+	"""Função para rodar uma sequência n posições para a direita"""
+
 	d = deque(s)
 	d.rotate(n)
 	return list(d)
 
 
-# Função para rotacionar uma coluna específica de uma matriz n posições para baixo
+
 def rotate_vertical(matrix, col, n):
+
+	"""Função para rodar uma coluna n posições para baixo"""
+
 	column = [matrix[i][col] for i in range(len(matrix))]
 	rotated_col = rotate(column, n)
 	for i in range(len(matrix)):
 		matrix[i][col] = rotated_col[i]
 
 
-# Função para gerar as matrizes ZA, ZB, ZC e ZD (ou ZS) e a matriz Z
 def generate_matrices(M, K, use_zs=True):
+
+	"""Função para gerar as matrizes ZA, ZB, ZC, ZD e Z"""
+
+
 	"""Seja M1 uma sequência com os primeiros K bytes de M e M2 outra sequência com os K bytes
 	restantes de M (ou seja, M = M1+M2);"""
 	M1 = M[:K]
@@ -89,6 +106,9 @@ def generate_matrices(M, K, use_zs=True):
 
 
 def process_Z(Z, T):
+
+	"""Função para processar a matriz Z"""
+
 	K = len(Z)
 	for i in range(K):
 		# 1. Atualizar a matriz Z de acordo com Zi* = rotate(Zi*,random(Z[i,0],0,K-1));
@@ -103,6 +123,9 @@ def process_Z(Z, T):
 
 
 def generate_key(Z, N):
+
+	"""Função para gerar uma chave"""
+
 	K = len(Z)
 
 	# 2. Escolhe-se uma linha Zi* de Z, de tal forma que i = random(N+Z[0,0],0,K-1);
@@ -123,8 +146,14 @@ def generate_key(Z, N):
 
 
 def generate_random_K(min_val=5, max_val=15):
+
+	"""Função para gerar um valor aleatório para K"""
+
 	return random.randint(min_val, max_val)
 
 
 def generate_random_M_string(K, min_val=0, max_val=9):
+
+	"""Função para gerar uma string aleatória para M"""
+
 	return "".join([str(random.randint(min_val, max_val)) for _ in range(2 * K)])

@@ -6,13 +6,19 @@ from SNMPKeySharePDU import SNMPKeySharePDU
 
 class SNMPKeyShareManager:
 
+	"""Classe que representa um gestor SNMPKeyShare"""
+
 	def __init__(self, timeout):
+
+		"""Construtor da classe"""
 
 		self.timeout = timeout
 		self.requests = {}
 		self.last_request_time = {}
 
 	def snmpkeyshare_get(self, P, NL, L, agent_ip, agent_port):
+
+		"""Envia um pedido snmpkeyshare-get para o agente SNMPKeyShare"""	
 
 		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.timeout:
 			raise ValueError(
@@ -45,6 +51,8 @@ class SNMPKeyShareManager:
 
 	def snmpkeyshare_set(self, P, NW, W, agent_ip, agent_port):
 
+		"""Envia um pedido snmpkeyshare-set para o agente SNMPKeyShare"""
+
 		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.timeout:
 			raise ValueError(
 				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
@@ -72,7 +80,10 @@ class SNMPKeyShareManager:
 				return None
 
 
-if __name__ == "__main__":
+def main():
+
+	"""Função principal"""
+
 	timeout = 10  # Escolha um valor apropriado para o tempo limite
 	manager = SNMPKeyShareManager(timeout)
 
@@ -109,3 +120,7 @@ if __name__ == "__main__":
 			set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)
 			print("Resposta snmpkeyshare-set recebida:")
 			print(set_pdu.__str__())
+
+
+if __name__ == '__main__':
+	main()

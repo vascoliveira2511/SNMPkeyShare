@@ -2,7 +2,13 @@ import pickle
 
 
 class SNMPKeySharePDU:
+	
+	"""Classe que representa um PDU SNMPKeyShare"""
+
 	def __init__(self, S=0, NS=0, Q=[], P=0, Y=0, NL_or_NW=0, L_or_W=[], NR=0, R=[]):
+
+		"""Construtor da classe"""
+
 		self.S = S  # Identificação do modelo de segurança
 		self.NS = NS  # Número de parâmetros necessários à implementação dos mecanismos de segurança
 		self.Q = Q  # Lista dos parâmetros necessários à implementação dos mecanismos de segurança
@@ -17,15 +23,22 @@ class SNMPKeySharePDU:
 		self.R = R  # Lista de erros e valores associados
 
 	def serialize(self):
+
 		"""Serializar o PDU para uma string usando pickle"""
+
 		return pickle.dumps(self)
 
 	@staticmethod
 	def deserialize(data):
+
 		"""Deserializar uma string para um PDU usando pickle"""
+
 		return pickle.loads(data)
 
 	def __str__(self):
+
+		"""Representação em string do PDU"""
+
 		return f"""
 		S  (Security Model):          {self.S}
 		NS (Number of SM parameters): {self.NS}
