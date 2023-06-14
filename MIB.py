@@ -26,12 +26,12 @@ class SNMPKeyShareMIB:
         }
 
     def add_entry_to_dataTableGeneratedKeys(self, key_id):
-        self.mib[f"3.2.{key_id}.1.0"] = InstanceData("RO", "Int", key_id)  # keyId
-        self.mib[f"3.2.{key_id}.2.0"] = InstanceData("RO", "String", "")  # keyValue
-        self.mib[f"3.2.{key_id}.3.0"] = InstanceData("RO", "String", "")  # KeyRequester
-        self.mib[f"3.2.{key_id}.4.0"] = InstanceData("RO", "Int", 0)  # keyExpirationDate
-        self.mib[f"3.2.{key_id}.5.0"] = InstanceData("RO", "Int", 0)  # keyExpirationTime
-        self.mib[f"3.2.{key_id}.6.0"] = InstanceData("RO", "Int", 0)  # keyVisibility
+        self.mib[f"3.2.1.1.{key_id}"] = InstanceData("RO", "Int", key_id)  # keyId
+        self.mib[f"3.2.1.2.{key_id}"] = InstanceData("RO", "String", "")  # keyValue
+        self.mib[f"3.2.1.3.{key_id}"] = InstanceData("RO", "String", "")  # KeyRequester
+        self.mib[f"3.2.1.4.{key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationDate
+        self.mib[f"3.2.1.5.{key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationTime
+        self.mib[f"3.2.1.6.{key_id}"] = InstanceData("RO", "Int", 0)  # keyVisibility
 
     def get(self, oid):
         if oid not in self.mib:
