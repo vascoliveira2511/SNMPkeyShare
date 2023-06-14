@@ -158,18 +158,21 @@ class SNMPKeyShareAgent:
 
 		print(f"Agente SNMPKeyShare a ouvir no endereço {ip}:{port}")
 
-		while True:
-			data, addr = sock.recvfrom(1024)
+		try:
+			while True:
+				data, addr = sock.recvfrom(1024)
 
-			# Usar pickle para desserializar os dados
-			pdu = pickle.loads(data)
+				# Usar pickle para desserializar os dados
+				pdu = pickle.loads(data)
 
-			response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
+				response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y)
 
-			# Usar pickle para serializar o response_pdu
-			response_pdu = pickle.dumps(response_pdu)
+				# Usar pickle para serializar o response_pdu
+				response_pdu = pickle.dumps(response_pdu)
 
-			sock.sendto(response_pdu, addr)
+				sock.sendto(response_pdu, addr)
+		except KeyboardInterrupt:
+			print("O agente foi terminado pelo utilizador.")
 
 
 def main():
@@ -179,6 +182,7 @@ def main():
 	file_path = "config.ini"
 	config_parameters = read_config_file(file_path)
 	udp_port = int(config_parameters['udp_port'])
+
 	ip = "127.0.0.1"
 	port = udp_port
 	agent = SNMPKeyShareAgent()
