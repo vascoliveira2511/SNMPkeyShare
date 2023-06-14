@@ -118,8 +118,19 @@ def main():
 			W = []
 			for _ in range(NW):
 				instance = input("Insira o identificador da instância: ")
-				value = input("Insira o novo valor para a instância: ")
-				W.append((instance, value))
+				if instance == "3.2.1.6.0":
+					print("Selecione a visibilidade da chave:")
+					print("0 - Invisível")
+					print("1 - Visível para o pedido")
+					print("2 - Visível para todos")
+					visibility = int(input("Insira a visibilidade desejada: "))
+					if visibility not in [0, 1, 2]:
+						print("Visibilidade inválida, tente novamente.")
+						continue
+					W.append((instance, visibility))
+				else:
+					value = input("Insira o novo valor para a instância: ")
+					W.append((instance, value))
 			set_pdu = manager.snmpkeyshare_set(P, NW, W, ip, port)
 			print("Resposta snmpkeyshare-set recebida:")
 			print(set_pdu.__str__())

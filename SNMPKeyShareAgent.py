@@ -128,6 +128,9 @@ class SNMPKeyShareAgent:
 			W = []
 			for pair in L_or_W:
 				oid, value = pair
+				if oid == "3.2.1.6.0":
+					oid, value = self.mib.add_entry_to_dataTableGeneratedKeys(value)
+					W.append((oid, value))
 				try:
 					self.mib.set(oid, value)
 					W.append((oid, value))
