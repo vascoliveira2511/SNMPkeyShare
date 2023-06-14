@@ -44,8 +44,9 @@ class SNMPKeyShareMIB:
         self.mib[f"3.2.1.4.{self.current_key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationDate
         self.mib[f"3.2.1.5.{self.current_key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationTime'
         self.mib[f"3.2.1.6.{self.current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
+        oid = f"3.2.1.6.{self.current_key_id}"
         self.current_key_id += 1
-        return f"3.2.1.6.{self.current_key_id}", key_visibility
+        return oid, key_visibility
 
     def get(self, oid):
         if oid not in self.mib:
