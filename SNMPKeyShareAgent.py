@@ -7,12 +7,7 @@ import time
 
 from MIB import *
 from SNMPKeySharePDU import SNMPKeySharePDU
-from keyMaintenance import generate_random_K, generate_random_M_string, generate_matrices, process_Z, generate_key
-
-K = generate_random_K()
-M_string = generate_random_M_string(K)
-M = list(map(int, M_string))
-
+from keyMaintenance import generate_matrices, process_Z, generate_key
 
 def read_config_file(file_path):
 
@@ -23,6 +18,11 @@ def read_config_file(file_path):
 
 	parameters = {
 		"udp_port": config.get("Network", "udp_port"),
+		"K": config.get("Key Maintenance", "K"),
+		"M": config.get("Key Maintenance", "M"),
+		"T": config.get("Key Maintenance", "T"),
+		"V": config.get("Key Maintenance", "V"),
+		"X": config.get("Key Maintenance", "X")
 	}
 
 	return parameters
@@ -32,18 +32,30 @@ class SNMPKeyShareAgent:
 
 	"""Classe que representa um agente SNMPKeyShare"""
 
-	def __init__(self, timeout=5, mib=None):
+	def __init__(self, K, M, T, V, X, mib):
 
 		"""Construtor da classe"""
 
 		self.key_update_thread = None
-		self.timeout = timeout
+
 		self.start_time = time.time()
 		self.mib = mib if mib is not None else SNMPKeyShareMIB()
 		self.running = False
+		self.T = T
+		self.K = K
+		self.M = M
+		self.V = V
+		self.X = X
 		self.Z = generate_matrices(M, K, use_zs=False)
 		self.num_updates = 0
-		self.T = 10000
+
+	def set_mib_initial_values(self):
+		
+		"""Define os valores iniciais da MIB"""
+		self.mib.set("1.4.0", self.T) # systemIntervalUpdate
+		self.mib.set("1.5.0", self.X) # systemMaxNumberOfKeys
+		self.mib.set("1.6.0", self.V) # systemKeysTimeToLive
+		self.mib.set("2.1.0", bytes(self.M, "utf-8")) # configMasterKey
 
 	def start_key_update_thread(self):
 
@@ -185,10 +197,14 @@ def main():
 	file_path = "config.ini"
 	config_parameters = read_config_file(file_path)
 	udp_port = int(config_parameters['udp_port'])
-
+	K = int(config_parameters['K'])
+	M = int(config_parameters['M'])
+	T = int(config_parameters['T'])
+	V = int(config_parameters['V'])
+	X = int(config_parameters['X'])
 	ip = "127.0.0.1"
 	port = udp_port
-	agent = SNMPKeyShareAgent()
+	agent = SNMPKeyShareAgent(K, M, T, V, X, None)
 	agent.start_key_update_thread()
 	agent.serve(ip, port)
 	agent.stop_key_update_thread()

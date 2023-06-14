@@ -17,10 +17,10 @@ class SNMPKeyShareMIB:
             "1.1.0": InstanceData("RO", "String", current_datetime.strftime("%Y%m%d")),  # systemRestartDate
             "1.2.0": InstanceData("RO", "String", current_datetime.strftime("%H%M%S")),  # systemRestartTime
             "1.3.0": InstanceData("RO", "Int", 1024),  # systemKeySize
-            "1.4.0": InstanceData("RW", "Int", 60),  # systemIntervalUpdate
-            "1.5.0": InstanceData("RW", "Int", 100),  # systemMaxNumberOfKeys
+            "1.4.0": InstanceData("RW", "Int", 0),  # systemIntervalUpdate
+            "1.5.0": InstanceData("RW", "Int", 0),  # systemMaxNumberOfKeys
             "1.6.0": InstanceData("RW", "Int", 3600),  # systemKeysTimeToLive
-            "2.1.0": InstanceData("RW", "String", "masterkey"),  # configMasterKey
+            "2.1.0": InstanceData("RW", "String", b"masterkey"),  # configMasterKey
             "2.2.0": InstanceData("RW", "Int", 33),  # configFirstCharOfKeysAlphabet
             "2.3.0": InstanceData("RW", "Int", 94),  # configCardinalityOfKeysAlphabet
             "3.1.0": InstanceData("RO", "Int", 0),  # dataNumberOfValidKeys

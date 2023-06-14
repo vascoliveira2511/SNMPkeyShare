@@ -44,7 +44,6 @@ class SNMPKeyShareManager:
 				return response_pdu
 
 			except socket.timeout:
-
 				print(
 					f"O agente não respondeu no intervalo de tempo {self.timeout} segundos.")
 				return None
