@@ -4,6 +4,7 @@ import socket
 import threading
 import configparser
 import time
+import string
 
 from MIB import *
 from SNMPKeySharePDU import SNMPKeySharePDU
@@ -48,6 +49,8 @@ class SNMPKeyShareAgent:
 		self.X = X
 		self.Z = generate_matrices(list(map(int, M)), K, use_zs=False)
 		self.num_updates = 0
+		self.current_key_id = 0
+		self.addr = None
 
 	def set_mib_initial_values(self):
 		
@@ -78,17 +81,55 @@ class SNMPKeyShareAgent:
 
 		while self.running:
 			process_Z(self.Z, self.T)
-			"""	
-			self.generate_and_update_key()
-			print("Key updated")
 			self.expire_keys()
-			"""
+
+	def expire_keys(self):
+		
+		"""Remove as chaves expiradas"""
+
+		current_date = int(datetime.datetime.now().strftime("%Y%m%d"))
+		current_time = int(datetime.datetime.now().strftime("%H%M%S"))
+
+		for entry in self.mib.mib:
+			if entry.startswith("3.2.1."):
+				key_expiration_date = self.mib.get(f"{entry}.4.0")
+				key_expiration_time = self.mib.get(f"{entry}.5.0")
+				if key_expiration_date < current_date or (key_expiration_date == current_date and key_expiration_time < current_time):
+					self.mib.remove_entry_from_dataTableGeneratedKeys(entry)
 
 	def get_uptime(self):
 		
 		"""Retorna o tempo de atividade do agente"""
 
 		return time.time() - self.start_time
+	
+	def calculate_key_expiration_date(self):
+
+		"""Calcula a data de expiração de uma chave"""	
+
+		new_date = datetime.datetime.now() + datetime.timedelta(seconds=self.V)
+		return new_date.strftime("%Y%m%d")
+
+	def calculate_key_expiration_time(self):
+
+		"""Calcula o tempo de expiração de uma chave"""
+
+		new_time = datetime.datetime.now() + datetime.timedelta(seconds=self.V)
+		return new_time.strftime("%H%M%S")
+
+
+	def generate_and_update_key(self):
+		"""Gera e atualiza uma chave"""
+
+		key = generate_key(self.Z, self.num_updates)
+
+		self.num_updates + 1
+
+		dataNumberOfValidKeys = self.num_updates + 1 #TODO
+		key_expiration_date = self.calculate_key_expiration_date()
+		key_expiration_time = self.calculate_key_expiration_time()
+
+		return key, key_expiration_date, key_expiration_time
 
 	def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
 
@@ -141,8 +182,14 @@ class SNMPKeyShareAgent:
 			for pair in L_or_W:
 				oid, value = pair
 				if oid == "3.2.1.6.0":
-					oid, value = self.mib.add_entry_to_dataTableGeneratedKeys(value)
-					W.append((oid, value))
+					try:
+						key, key_expiration_date, key_expiration_time = self.generate_and_update_key()
+						oid, value = self.mib.add_entry_to_dataTableGeneratedKeys(self.current_key_id, key, self.addr, key_expiration_date, key_expiration_time, value)
+						self.current_key_id += 1
+						W.append((oid, value))
+					except ValueError as e:
+						R.append((oid, e))
+						NR += 1
 				try:
 					self.mib.set(oid, value)
 					W.append((oid, value))
@@ -175,7 +222,7 @@ class SNMPKeyShareAgent:
 
 		try:
 			while True:
-				data, addr = sock.recvfrom(1024)
+				data, self.addr = sock.recvfrom(1024)
 
 				# Usar pickle para desserializar os dados
 				pdu = pickle.loads(data)
@@ -185,7 +232,7 @@ class SNMPKeyShareAgent:
 				# Usar pickle para serializar o response_pdu
 				response_pdu = pickle.dumps(response_pdu)
 
-				sock.sendto(response_pdu, addr)
+				sock.sendto(response_pdu, self.addr)
 		except KeyboardInterrupt:
 			print("O agente foi terminado pelo utilizador.")
 

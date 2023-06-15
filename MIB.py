@@ -11,7 +11,6 @@ class InstanceData:
 class SNMPKeyShareMIB:
     def __init__(self):
         current_datetime = datetime.now()
-        self.current_key_id = 0
 
         self.mib = {
             "1.1.0": InstanceData("RO", "String", current_datetime.strftime("%Y%m%d")),  # systemRestartDate
@@ -37,16 +36,21 @@ class SNMPKeyShareMIB:
 
     # Pensar nisso como 3.2.1 é a tabela de dados e o próximo valor é o índice da coluna e o current_key_id é o índice da linha
 
-    def add_entry_to_dataTableGeneratedKeys(self, key_visibility=0):
-        self.mib[f"3.2.1.1.{self.current_key_id}"] = InstanceData("RO", "Int", self.current_key_id)  # keyId
-        self.mib[f"3.2.1.2.{self.current_key_id}"] = InstanceData("RO", "String", "")  # keyValue
-        self.mib[f"3.2.1.3.{self.current_key_id}"] = InstanceData("RO", "String", "")  # KeyRequester
-        self.mib[f"3.2.1.4.{self.current_key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationDate
-        self.mib[f"3.2.1.5.{self.current_key_id}"] = InstanceData("RO", "Int", 0)  # keyExpirationTime'
-        self.mib[f"3.2.1.6.{self.current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
-        oid = f"3.2.1.6.{self.current_key_id}"
-        self.current_key_id += 1
+    def add_entry_to_dataTableGeneratedKeys(self, current_key_id, key, KeyRequester, key_expiration_date, key_expiration_time, key_visibility=0):
+        self.mib[f"3.2.1.1.{current_key_id}"] = InstanceData("RO", "Int", current_key_id)  # keyId
+        self.mib[f"3.2.1.2.{current_key_id}"] = InstanceData("RO", "String", key)  # keyValue
+        self.mib[f"3.2.1.3.{current_key_id}"] = InstanceData("RO", "String", KeyRequester)  # KeyRequester
+        self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_date)  # keyExpirationDate
+        self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_time)  # keyExpirationTime
+        self.mib[f"3.2.1.6.{current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
+        oid = f"3.2.1.6.{current_key_id}"
         return oid, key_visibility
+
+    
+    def remove_entry_from_dataTableGeneratedKeys(self, oid):
+        oid = oid.split(".")
+        oid = ".".join(oid[:5])
+        del self.mib[oid]
 
     def get(self, oid):
         if oid not in self.mib:

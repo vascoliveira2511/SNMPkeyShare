@@ -118,8 +118,8 @@ def process_Z(Z, T):
 		# 2. Atualizar a matriz Z de acordo com Z*j = rotate_vertical(Z*j,random(Z[0,j],0,K-1))
 		rotate_vertical(Z, j, random_with_seed(Z[0][j], 0, K - 1))
 
-	# Pausa por T milissegundos
-	time.sleep(T / 1000)
+	# Pausa por T segundos
+	time.sleep(T)
 
 
 def generate_key(Z, N):
