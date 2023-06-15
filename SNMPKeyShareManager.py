@@ -1,18 +1,32 @@
+import configparser
 import pickle
 import socket
 import time
 from SNMPKeySharePDU import SNMPKeySharePDU
 
 
+def read_config_file(file_path):
+	
+	"""Lê o ficheiro de configuração e retorna um dicionário com os parâmetros"""
+
+	config = configparser.ConfigParser()
+	config.read(file_path)
+
+	parameters = {
+		"V" : config.get("Key Maintenance", "V"),
+	}
+
+	return parameters
+
 class SNMPKeyShareManager:
 
 	"""Classe que representa um gestor SNMPKeyShare"""
 
-	def __init__(self, timeout):
+	def __init__(self, V):
 
 		"""Construtor da classe"""
 
-		self.timeout = timeout
+		self.V = V
 		self.requests = {}
 		self.last_request_time = {}
 
@@ -52,7 +66,7 @@ class SNMPKeyShareManager:
 
 		"""Envia um pedido snmpkeyshare-set para o agente SNMPKeyShare"""
 
-		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.timeout:
+		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.V:
 			raise ValueError(
 				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
 
@@ -61,7 +75,7 @@ class SNMPKeyShareManager:
 
 		# Enviar o PDU para o agente usando comunicação UDP
 		with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
-			udp_socket.settimeout(self.timeout)
+			udp_socket.settimeout(self.V)
 
 			pdu = pickle.dumps(pdu)
 			udp_socket.sendto(pdu, (agent_ip, agent_port))
@@ -75,7 +89,7 @@ class SNMPKeyShareManager:
 
 			except socket.timeout:
 				print(
-					f"O agente não respondeu no intervalo de tempo {self.timeout} segundos.")
+					f"O agente não respondeu no intervalo de tempo {self.V} segundos.")
 				return None
 
 
@@ -83,12 +97,13 @@ def main():
 
 	"""Função principal"""
 
-	timeout = 10  # Escolha um valor apropriado para o tempo limite
-	manager = SNMPKeyShareManager(timeout)
+	file_path = "config.ini"
+	config_parameters = read_config_file(file_path)
+	V = config_parameters['V']
+	manager = SNMPKeyShareManager(V)
 
 	ip = "127.0.0.1"
 	port = 161
-	agent_address = (ip, port)
 
 	while True:
 		operation = input("Insira a operação desejada (get ou set): ")

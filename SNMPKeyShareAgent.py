@@ -46,7 +46,7 @@ class SNMPKeyShareAgent:
 		self.M = M
 		self.V = V
 		self.X = X
-		self.Z = generate_matrices(M, K, use_zs=False)
+		self.Z = generate_matrices(list(map(int, M)), K, use_zs=False)
 		self.num_updates = 0
 
 	def set_mib_initial_values(self):
