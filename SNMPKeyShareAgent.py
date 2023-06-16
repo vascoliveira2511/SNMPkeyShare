@@ -47,7 +47,7 @@ class SNMPKeyShareAgent:
 		self.M = M
 		self.V = V
 		self.X = X
-		self.Z = generate_matrices(list(map(int, M)), K, use_zs=False)
+		self.Z = generate_matrices(list(map(int, M[1:-1])), K, use_zs=False)
 		self.num_updates = 0
 		self.current_key_id = 0
 		self.addr = None
@@ -95,8 +95,8 @@ class SNMPKeyShareAgent:
 		
 		"""Remove as chaves expiradas"""
 
-		current_date = int(datetime.datetime.now().strftime("%Y%m%d"))
-		current_time = int(datetime.datetime.now().strftime("%H%M%S"))
+		current_date = int(datetime.now().strftime("%Y%m%d"))
+		current_time = int(datetime.now().strftime("%H%M%S"))
 
 		for entry in self.mib.mib:
 			if entry.startswith("3.2.1.1"):
@@ -123,7 +123,7 @@ class SNMPKeyShareAgent:
 		
 		"""Atualiza o número de chaves válidas"""
 
-		self.mib.set("3.1.0", self.count_number_valid_keys())
+		self.mib.setAdmin("3.1.0", self.count_number_valid_keys())
 		
 
 	def get_uptime(self):
@@ -136,21 +136,21 @@ class SNMPKeyShareAgent:
 
 		"""Calcula a data de expiração de uma chave"""	
 
-		new_date = datetime.datetime.now() + datetime.timedelta(seconds=self.V)
+		new_date = datetime.now() + datetime.timedelta(seconds=self.V)
 		return new_date.strftime("%Y%m%d")
 
 	def calculate_key_expiration_time(self):
 
 		"""Calcula o tempo de expiração de uma chave"""
 
-		new_time = datetime.datetime.now() + datetime.timedelta(seconds=self.V)
+		new_time = datetime.now() + datetime.timedelta(seconds=self.V)
 		return new_time.strftime("%H%M%S")
 	
 	def check_limits(self):
 		
 		"""Verifica se o número de chaves geradas está dentro dos limites"""
 
-		if self.count_number_valid_keys() >= self.X:
+		if self.count_number_valid_keys() >= self.mib.get("1.5.0"):
 			return False
 		else:
 			return True
@@ -162,13 +162,13 @@ class SNMPKeyShareAgent:
 		if not self.check_limits():
 			key = generate_key(self.Z, self.num_updates)
 
-			self.num_updates + 1
+			self.num_updates += 1
 			key_expiration_date = self.calculate_key_expiration_date()
 			key_expiration_time = self.calculate_key_expiration_time()
 
 			return key, key_expiration_date, key_expiration_time
 		else:
-			raise ValueError(f"O número de chaves geradas está acima do limite ({self.X}).")
+			raise ValueError(f"O número de chaves geradas está acima do limite ({self.mib.get('1.5.0')}).")
 		
 	def get_key_info(self, oid, addr):
 		
@@ -238,7 +238,7 @@ class SNMPKeyShareAgent:
 					for i in range(n):
 						if oid.startswith("3.2.1."):
 							try:
-								oid, value = self.mib.get_next(oid, self.addr)
+								oid, value = self.mib.get_next(oid, self.current_key_id)
 								L.append((oid, value))
 							except ValueError as e:
 								R.append((oid, e))
@@ -325,7 +325,7 @@ def main():
 	config_parameters = read_config_file(file_path)
 	udp_port = int(config_parameters['udp_port'])
 	K = int(config_parameters['K'])
-	M = int(config_parameters['M'])
+	M = config_parameters['M']
 	T = int(config_parameters['T'])
 	V = int(config_parameters['V'])
 	X = int(config_parameters['X'])

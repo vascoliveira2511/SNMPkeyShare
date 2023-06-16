@@ -19,10 +19,10 @@ class SNMPKeyShareMIB:
             "1.4.0": InstanceData("RW", "Int", 0),  # systemIntervalUpdate
             "1.5.0": InstanceData("RW", "Int", 0),  # systemMaxNumberOfKeys
             "1.6.0": InstanceData("RW", "Int", 3600),  # systemKeysTimeToLive
-            "2.1.0": InstanceData("RW", "String", b"masterkey"),  # configMasterKey
+            "2.1.0": InstanceData("RW", "String", "masterkey"),  # configMasterKey
             "2.2.0": InstanceData("RW", "Int", 33),  # configFirstCharOfKeysAlphabet
             "2.3.0": InstanceData("RW", "Int", 94),  # configCardinalityOfKeysAlphabet
-            "3.1.0": InstanceData("RO", "Int", 0),  # dataNumberOfValidKeys
+            "3.1.0": InstanceData("RO", "Int", 0),  # dataNumberOfValidKeys 
         }
 
 
@@ -49,28 +49,28 @@ class SNMPKeyShareMIB:
     def get_id_from_oid(self, oid):
         return oid.split(".")[-1]
 
-    def remove_entry_from_dataTableGeneratedKeys(self, oid):
-        oid = oid.split(".")
-        oid = ".".join(oid[:5])
-        del self.mib[oid]
+    def remove_entry_from_dataTableGeneratedKeys(self, oid): 
+        id = self.get_id_from_oid(oid)
+        for i in range(1, 7):
+            del self.mib[f"3.2.1.{i}.{id}"]
 
     def get(self, oid):
         if oid not in self.mib:
             raise ValueError(f"O OID {oid} não existe.")
         return self.mib[oid].value
 
-    def get_next(self, oid, ident = None):
+    def get_next(self, oid, current_key_id=None):
         if oid not in self.mib:
             raise ValueError(f"O OID {oid} não existe.")
 
-        keys = list(self.mib.keys())
+        keys = list(self.mib.keys()) 
         idx = keys.index(oid)
 
         if idx == len(keys) - 1:
             raise ValueError(f"O OID {oid} é o último OID na MIB.")
         
-        if ident != None:
-            if ident != self.get_id_from_oid(oid):
+        if current_key_id != None:
+            if current_key_id != self.get_id_from_oid(oid):
                 raise ValueError(f"O ID {id} não pertence ao OID {oid}.")
 
         next_oid = keys[idx + 1]
@@ -85,3 +85,9 @@ class SNMPKeyShareMIB:
             raise ValueError(f"O OID {oid} é do tipo {self.mib[oid].instance_type}.")
         self.mib[oid].value = value
 		
+    def setAdmin(self, oid, value):
+        if oid not in self.mib:
+            raise ValueError(f"O OID {oid} não existe.")
+        if self.mib[oid].instance_type != type(value).__name__:
+            raise ValueError(f"O OID {oid} é do tipo {self.mib[oid].instance_type}.")
+        self.mib[oid].value = value

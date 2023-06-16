@@ -13,6 +13,7 @@ def read_config_file(file_path):
 	config.read(file_path)
 
 	parameters = {
+		"udp_port": config.get("Network", "udp_port"),
 		"V" : config.get("Key Maintenance", "V"),
 	}
 
@@ -34,9 +35,9 @@ class SNMPKeyShareManager:
 
 		"""Envia um pedido snmpkeyshare-get para o agente SNMPKeyShare"""	
 
-		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.timeout:
+		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.V:
 			raise ValueError(
-				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
+				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.V} segundos.")
 
 		self.last_request_time[P] = time.time()
 
@@ -45,7 +46,7 @@ class SNMPKeyShareManager:
 		# Enviar o PDU para o agente utilizando comunicação UDP
 		with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as udp_socket:
 
-			udp_socket.settimeout(self.timeout)
+			udp_socket.settimeout(self.V)
 
 			pdu = pickle.dumps(pdu)
 			udp_socket.sendto(pdu, (agent_ip, agent_port))
@@ -59,7 +60,7 @@ class SNMPKeyShareManager:
 
 			except socket.timeout:
 				print(
-					f"O agente não respondeu no intervalo de tempo {self.timeout} segundos.")
+					f"O agente não respondeu no intervalo de tempo {self.V} segundos.")
 				return None
 
 	def snmpkeyshare_set(self, P, NW, W, agent_ip, agent_port):
@@ -68,7 +69,7 @@ class SNMPKeyShareManager:
 
 		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.V:
 			raise ValueError(
-				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.timeout} segundos.")
+				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.V} segundos.")
 
 		self.last_request_time[P] = time.time()
 		pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=2, NL_or_NW=NW, L_or_W=W, NR=0, R=[])
@@ -100,10 +101,10 @@ def main():
 	file_path = "config.ini"
 	config_parameters = read_config_file(file_path)
 	V = config_parameters['V']
+	port = config_parameters['udp_port']
 	manager = SNMPKeyShareManager(V)
 
 	ip = "127.0.0.1"
-	port = 161
 	try:
 		while True:
 			operation = input("Insira a operação desejada (get ou set): ")
