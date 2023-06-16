@@ -97,8 +97,8 @@ class SNMPKeyShareAgent:
 		
 		"""Remove as chaves expiradas"""
 
-		current_date = int(datetime.now().strftime("%Y%m%d"))
-		current_time = int(datetime.now().strftime("%H%M%S"))
+		current_date = datetime.now().strftime("%Y%m%d")
+		current_time = datetime.now().strftime("%H%M%S")
 
 		for entry in self.mib.mib:
 			if entry.startswith("3.2.1.1"):
@@ -159,7 +159,7 @@ class SNMPKeyShareAgent:
 	def generate_and_update_key(self):
 		"""Gera e atualiza uma chave"""
 		
-		if not self.check_limits():
+		if self.check_limits():
 			key = generate_key(self.Z, self.num_updates)
 
 			self.num_updates += 1
@@ -168,7 +168,7 @@ class SNMPKeyShareAgent:
 
 			return key, key_expiration_date, key_expiration_time
 		else:
-			raise ValueError(f"O número de chaves geradas está acima do limite ({self.mib.get('1.5.0')}).")
+			raise ValueError(f"O número de chaves geradas ({self.count_number_valid_keys()}) está acima do limite ({self.mib.get('1.5.0')}).")
 		
 	def get_key_info(self, oid, addr):
 		
@@ -238,7 +238,7 @@ class SNMPKeyShareAgent:
 					for i in range(n):
 						if oid.startswith("3.2.1."):
 							try:
-								oid, value = self.mib.get_next(oid, self.current_key_id)
+								oid, value = self.mib.get_next(oid, self.get_id_from_oid(oid))
 								L.append((oid, value))
 							except ValueError as e:
 								R.append((oid, e))
@@ -270,12 +270,13 @@ class SNMPKeyShareAgent:
 					except ValueError as e:
 						R.append((oid, e))
 						NR += 1
-				try:
-					self.mib.set(oid, value)
-					W.append((oid, value))
-				except ValueError as e:
-					R.append((oid, e))
-					NR += 1
+				else:
+					try:
+						self.mib.set(oid, value)
+						W.append((oid, value))
+					except ValueError as e:
+						R.append((oid, e))
+						NR += 1
 			if NR == 0:
 				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=[])
 			else:

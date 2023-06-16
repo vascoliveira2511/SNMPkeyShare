@@ -38,8 +38,8 @@ class SNMPKeyShareMIB:
 		self.mib[f"3.2.1.1.{current_key_id}"] = InstanceData("RO", "Int", current_key_id)  # keyId
 		self.mib[f"3.2.1.2.{current_key_id}"] = InstanceData("RO", "Str", key)  # keyValue
 		self.mib[f"3.2.1.3.{current_key_id}"] = InstanceData("RO", "Str", KeyRequester)  # KeyRequester
-		self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_date)  # keyExpirationDate
-		self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_time)  # keyExpirationTime
+		self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Str", key_expiration_date)  # keyExpirationDate
+		self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Str", key_expiration_time)  # keyExpirationTime
 		self.mib[f"3.2.1.6.{current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
 		oid = f"3.2.1.6.{current_key_id}"
 		return oid, key_visibility
@@ -69,7 +69,7 @@ class SNMPKeyShareMIB:
 
 		if current_key_id is not None:
 			if current_key_id != self.get_id_from_oid(oid):
-				raise ValueError(f"O ID {id} não pertence ao OID {oid}.")
+				raise ValueError(f"O ID {current_key_id} não pertence ao OID {oid}.")
 
 		next_oid = keys[idx + 1]
 		return next_oid, self.mib[next_oid].value
