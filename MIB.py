@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 
 
 class InstanceData:
+
+	""" Classe que representa os dados de uma instância da MIB """
+
 	def __init__(self, access_type, instance_type, value):
 		self.access_type = access_type
 		self.instance_type = instance_type
@@ -9,7 +12,13 @@ class InstanceData:
 
 
 class SNMPKeyShareMIB:
+
+	""" Classe que representa a MIB SNMPKeyShare """
+
 	def __init__(self):
+
+		""" Construtor da classe """
+
 		current_datetime = datetime.now()
 
 		self.mib = {
@@ -35,6 +44,9 @@ class SNMPKeyShareMIB:
 	# Pensar nisso como 3.2.1 é a tabela de dados e o próximo valor é o índice da coluna e o current_key_id é o índice da linha
 
 	def add_entry_to_dataTableGeneratedKeys(self, current_key_id, key, KeyRequester, key_expiration_date, key_expiration_time, key_visibility=0):
+
+		"""Adiciona uma entrada à tabela de dados"""
+
 		self.mib[f"3.2.1.1.{current_key_id}"] = InstanceData("RO", "Int", current_key_id)  # keyId
 		self.mib[f"3.2.1.2.{current_key_id}"] = InstanceData("RO", "Str", key)  # keyValue
 		self.mib[f"3.2.1.3.{current_key_id}"] = InstanceData("RO", "Str", KeyRequester)  # KeyRequester
@@ -45,19 +57,31 @@ class SNMPKeyShareMIB:
 		return oid, key_visibility
 
 	def get_id_from_oid(self, oid):
+
+		"""Retorna o ID de uma chave a partir do OID"""
+
 		return oid.split(".")[-1]
 
 	def remove_entry_from_dataTableGeneratedKeys(self, oid):
+
+		"""Remove uma entrada da tabela de dados"""
+
 		id = self.get_id_from_oid(oid)
 		for i in range(1, 7):
 			del self.mib[f"3.2.1.{i}.{id}"]
 
 	def get(self, oid):
+
+		"""Retorna o valor de uma instância da MIB"""
+
 		if oid not in self.mib:
 			raise ValueError(f"O OID {oid} não existe.")
 		return self.mib[oid].value
 
 	def get_next(self, oid, current_key_id=None):
+
+		"""Retorna o próximo OID e o seu valor"""
+
 		if oid not in self.mib:
 			raise ValueError(f"O OID {oid} não existe.")
 
@@ -75,6 +99,9 @@ class SNMPKeyShareMIB:
 		return next_oid, self.mib[next_oid].value
 
 	def set(self, oid, value):
+
+		"""Define o valor de uma instância da MIB"""
+
 		if oid not in self.mib:
 			raise ValueError(f"O OID {oid} não existe.")
 		if self.mib[oid].access_type == "RO":
@@ -84,6 +111,9 @@ class SNMPKeyShareMIB:
 		self.mib[oid].value = value
 
 	def setAdmin(self, oid, value):
+
+		"""Define o valor de uma instância da MIB sem verificar o acesso"""
+
 		if oid not in self.mib:
 			raise ValueError(f"O OID {oid} não existe.")
 		if self.mib[oid].instance_type.casefold() != type(value).__name__.casefold():
