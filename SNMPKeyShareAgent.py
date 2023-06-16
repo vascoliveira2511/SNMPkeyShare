@@ -4,11 +4,11 @@ import socket
 import threading
 import configparser
 import time
-import string
 
 from MIB import *
 from SNMPKeySharePDU import SNMPKeySharePDU
 from keyMaintenance import generate_matrices, process_Z, generate_key
+
 
 def read_config_file(file_path):
 
@@ -18,12 +18,12 @@ def read_config_file(file_path):
 	config.read(file_path)
 
 	parameters = {
-		"udp_port": config.get("Network", "udp_port"),
-		"K": config.get("Key Maintenance", "K"),
+		"udp_port": int(config.get("Network", "udp_port")),
+		"K": int(config.get("Key Maintenance", "K")),
 		"M": config.get("Key Maintenance", "M"),
-		"T": config.get("Key Maintenance", "T"),
-		"V": config.get("Key Maintenance", "V"),
-		"X": config.get("Key Maintenance", "X")
+		"T": int(config.get("Key Maintenance", "T")),
+		"V": int(config.get("Key Maintenance", "V")),
+		"X": int(config.get("Key Maintenance", "X"))
 	}
 
 	return parameters
@@ -47,18 +47,20 @@ class SNMPKeyShareAgent:
 		self.M = M
 		self.V = V
 		self.X = X
-		self.Z = generate_matrices(list(map(int, M[1:-1])), K, use_zs=False)
+		self.Z = generate_matrices(list(map(int, M)), K, use_zs=False)
 		self.num_updates = 0
-		self.current_key_id = 0
+		self.current_key_id = 1
 		self.addr = None
+
+		self.set_mib_initial_values()
 
 	def set_mib_initial_values(self):
 		
 		"""Define os valores iniciais da MIB"""
-		self.mib.set("1.4.0", self.T) # systemIntervalUpdate
-		self.mib.set("1.5.0", self.X) # systemMaxNumberOfKeys
-		self.mib.set("1.6.0", self.V) # systemKeysTimeToLive
-		self.mib.set("2.1.0", bytes(self.M, "utf-8")) # configMasterKey
+		self.mib.set("1.4.0", self.T)  # systemIntervalUpdate
+		self.mib.set("1.5.0", self.X)  # systemMaxNumberOfKeys
+		self.mib.set("1.6.0", self.V)  # systemKeysTimeToLive
+		self.mib.set("2.1.0", self.M)  # configMasterKey
 
 	def start_key_update_thread(self):
 
@@ -125,7 +127,6 @@ class SNMPKeyShareAgent:
 
 		self.mib.setAdmin("3.1.0", self.count_number_valid_keys())
 		
-
 	def get_uptime(self):
 		
 		"""Retorna o tempo de atividade do agente"""
@@ -136,14 +137,14 @@ class SNMPKeyShareAgent:
 
 		"""Calcula a data de expiração de uma chave"""	
 
-		new_date = datetime.now() + datetime.timedelta(seconds=self.V)
+		new_date = datetime.now() + timedelta(seconds=self.V)
 		return new_date.strftime("%Y%m%d")
 
 	def calculate_key_expiration_time(self):
 
 		"""Calcula o tempo de expiração de uma chave"""
 
-		new_time = datetime.now() + datetime.timedelta(seconds=self.V)
+		new_time = datetime.now() + timedelta(seconds=self.V)
 		return new_time.strftime("%H%M%S")
 	
 	def check_limits(self):
@@ -154,7 +155,6 @@ class SNMPKeyShareAgent:
 			return False
 		else:
 			return True
-
 
 	def generate_and_update_key(self):
 		"""Gera e atualiza uma chave"""
@@ -338,5 +338,4 @@ def main():
 
 
 if __name__ == "__main__":
-
 	main()

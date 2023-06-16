@@ -5,9 +5,16 @@ class SNMPKeySharePDU:
 	
 	"""Classe que representa um PDU SNMPKeyShare"""
 
-	def __init__(self, S=0, NS=0, Q=[], P=0, Y=0, NL_or_NW=0, L_or_W=[], NR=0, R=[]):
+	def __init__(self, S=0, NS=0, Q=None, P=0, Y=0, NL_or_NW=0, L_or_W=None, NR=0, R=None):
 
 		"""Construtor da classe"""
+
+		if R is None:
+			R = []
+		if L_or_W is None:
+			L_or_W = []
+		if Q is None:
+			Q = []
 
 		self.S = S  # Identificação do modelo de segurança
 		self.NS = NS  # Número de parâmetros necessários à implementação dos mecanismos de segurança

@@ -1,6 +1,5 @@
 import random
 from collections import deque
-import time
 
 
 def random_with_seed(seed, min_val, max_val):

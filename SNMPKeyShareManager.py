@@ -13,11 +13,12 @@ def read_config_file(file_path):
 	config.read(file_path)
 
 	parameters = {
-		"udp_port": config.get("Network", "udp_port"),
-		"V" : config.get("Key Maintenance", "V"),
+		"udp_port": int(config.get("Network", "udp_port")),
+		"V": int(config.get("Key Maintenance", "V")),
 	}
 
 	return parameters
+
 
 class SNMPKeyShareManager:
 
