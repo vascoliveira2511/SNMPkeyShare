@@ -238,6 +238,7 @@ class SNMPKeyShareAgent:
 					for i in range(n):
 						if oid.startswith("3.2.1."):
 							try:
+								self.get_key_info(oid, self.addr)
 								oid, value = self.mib.get_next(oid, self.get_id_from_oid(oid))
 								L.append((oid, value))
 							except ValueError as e:
