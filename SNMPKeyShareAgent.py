@@ -80,8 +80,16 @@ class SNMPKeyShareAgent:
 		"""Loop que atualiza as chaves"""
 
 		while self.running:
-			process_Z(self.Z, self.T)
+			process_Z(self.Z)
 			self.expire_keys()
+			self.update_number_valid_keys()
+			time.sleep(self.T)
+
+	def get_id_from_oid(self, oid):
+		
+		"""Retorna o ID de uma chave a partir do OID"""
+
+		return oid.split(".")[-1]
 
 	def expire_keys(self):
 		
@@ -91,11 +99,32 @@ class SNMPKeyShareAgent:
 		current_time = int(datetime.datetime.now().strftime("%H%M%S"))
 
 		for entry in self.mib.mib:
-			if entry.startswith("3.2.1."):
-				key_expiration_date = self.mib.get(f"{entry}.4.0")
-				key_expiration_time = self.mib.get(f"{entry}.5.0")
+			if entry.startswith("3.2.1.1"):
+				id = self.get_id_from_oid(entry)
+				key_expiration_date = self.mib.get(f"3.2.1.4.{id}")
+				key_expiration_time = self.mib.get(f"3.2.1.5.{id}")
 				if key_expiration_date < current_date or (key_expiration_date == current_date and key_expiration_time < current_time):
 					self.mib.remove_entry_from_dataTableGeneratedKeys(entry)
+
+	def count_number_valid_keys(self):
+		
+		"""Conta o número de chaves válidas"""
+
+		count = 0
+		for entry in self.mib.mib:
+			if entry.startswith("3.2.1.1"):
+				id = self.get_id_from_oid(entry)
+				key_visibility = self.mib.get(f"3.2.1.6.{id}")
+				if key_visibility == 1 or key_visibility == 2:
+					count += 1
+		return count
+	
+	def update_number_valid_keys(self):
+		
+		"""Atualiza o número de chaves válidas"""
+
+		self.mib.set("3.1.0", self.count_number_valid_keys())
+		
 
 	def get_uptime(self):
 		
@@ -116,20 +145,45 @@ class SNMPKeyShareAgent:
 
 		new_time = datetime.datetime.now() + datetime.timedelta(seconds=self.V)
 		return new_time.strftime("%H%M%S")
+	
+	def check_limits(self):
+		
+		"""Verifica se o número de chaves geradas está dentro dos limites"""
+
+		if self.count_number_valid_keys() >= self.X:
+			return False
+		else:
+			return True
 
 
 	def generate_and_update_key(self):
 		"""Gera e atualiza uma chave"""
+		
+		if not self.check_limits():
+			key = generate_key(self.Z, self.num_updates)
 
-		key = generate_key(self.Z, self.num_updates)
+			self.num_updates + 1
+			key_expiration_date = self.calculate_key_expiration_date()
+			key_expiration_time = self.calculate_key_expiration_time()
 
-		self.num_updates + 1
+			return key, key_expiration_date, key_expiration_time
+		else:
+			raise ValueError(f"O número de chaves geradas está acima do limite ({self.X}).")
+		
+	def get_key_info(self, oid, addr):
+		
+		"""Retorna a informação de uma chave"""
 
-		dataNumberOfValidKeys = self.num_updates + 1 #TODO
-		key_expiration_date = self.calculate_key_expiration_date()
-		key_expiration_time = self.calculate_key_expiration_time()
-
-		return key, key_expiration_date, key_expiration_time
+		id = self.get_id_from_oid(oid)
+		key_visibility = self.mib.get(f"3.2.1.6.{id}")
+		if key_visibility == 0:
+			raise ValueError(f"A chave com o OID {oid} é invisível.")
+		elif key_visibility == 1:
+			key_requester = self.mib.get(f"3.2.1.3.{id}")
+			if key_requester != addr:
+				raise ValueError(f"A chave com o OID {oid} é invisível para o endereço {addr}.")
+		else:
+			pass
 
 	def snmpkeyshare_response(self, P, NL_or_NW, L_or_W, Y):
 
@@ -150,26 +204,52 @@ class SNMPKeyShareAgent:
 			for pair in L_or_W:
 				oid, n = pair
 				if n == 0:
-					try:
-						value = self.mib.get(oid)
-						L.append((oid, value))
-					except ValueError as e:
-						R.append((oid, e))
-						NR += 1
-				else:
-					try:
-						value = self.mib.get(oid)
-						L.append((oid, value))
-					except ValueError as e:
-						R.append((oid, e))
-						NR += 1
-					for i in range(n):
+					if oid.startswith("3.2.1."):
 						try:
-							oid, value = self.mib.get_next(oid)
+							self.get_key_info(oid, self.addr)
+							value = self.mib.get(oid)
 							L.append((oid, value))
 						except ValueError as e:
 							R.append((oid, e))
 							NR += 1
+					else:
+						try:
+							value = self.mib.get(oid)
+							L.append((oid, value))
+						except ValueError as e:
+							R.append((oid, e))
+							NR += 1
+				else:
+					if oid.startswith("3.2.1."):
+						try:
+							self.get_key_info(oid, self.addr)
+							value = self.mib.get(oid)
+							L.append((oid, value))
+						except ValueError as e:
+							R.append((oid, e))
+							NR += 1
+					else:
+						try:
+							value = self.mib.get(oid)
+							L.append((oid, value))
+						except ValueError as e:
+							R.append((oid, e))
+							NR += 1
+					for i in range(n):
+						if oid.startswith("3.2.1."):
+							try:
+								oid, value = self.mib.get_next(oid, self.addr)
+								L.append((oid, value))
+							except ValueError as e:
+								R.append((oid, e))
+								NR += 1
+						else:
+							try:
+								oid, value = self.mib.get_next(oid)
+								L.append((oid, value))
+							except ValueError as e:
+								R.append((oid, e))
+								NR += 1
 			if NR == 0:
 				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
 			else:

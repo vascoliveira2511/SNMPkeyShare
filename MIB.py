@@ -45,8 +45,10 @@ class SNMPKeyShareMIB:
         self.mib[f"3.2.1.6.{current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
         oid = f"3.2.1.6.{current_key_id}"
         return oid, key_visibility
-
     
+    def get_id_from_oid(self, oid):
+        return oid.split(".")[-1]
+
     def remove_entry_from_dataTableGeneratedKeys(self, oid):
         oid = oid.split(".")
         oid = ".".join(oid[:5])
@@ -57,7 +59,7 @@ class SNMPKeyShareMIB:
             raise ValueError(f"O OID {oid} não existe.")
         return self.mib[oid].value
 
-    def get_next(self, oid):
+    def get_next(self, oid, ident = None):
         if oid not in self.mib:
             raise ValueError(f"O OID {oid} não existe.")
 
@@ -66,6 +68,10 @@ class SNMPKeyShareMIB:
 
         if idx == len(keys) - 1:
             raise ValueError(f"O OID {oid} é o último OID na MIB.")
+        
+        if ident != None:
+            if ident != self.get_id_from_oid(oid):
+                raise ValueError(f"O ID {id} não pertence ao OID {oid}.")
 
         next_oid = keys[idx + 1]
         return next_oid, self.mib[next_oid].value
