@@ -118,7 +118,7 @@ def process_Z(Z):
 		rotate_vertical(Z, j, random_with_seed(Z[0][j], 0, K - 1))
 
 
-def generate_key(Z, N):
+def generate_key(Z, N, first_char, cardinality):
 
 	"""Função para gerar uma chave"""
 
@@ -136,7 +136,7 @@ def generate_key(Z, N):
 	C = [Zi_star[k] ^ Zj_star[k] for k in range(K)]
 
 	# Converter os valores em caracteres ASCII legíveis
-	C_ascii = "".join(chr(c % 75 + 48) for c in C)
+	C_ascii = "".join(chr(c % cardinality + first_char) for c in C)
 
 	return C_ascii
 

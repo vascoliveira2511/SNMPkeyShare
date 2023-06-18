@@ -57,6 +57,7 @@ class SNMPKeyShareAgent:
 	def set_mib_initial_values(self):
 		
 		"""Define os valores iniciais da MIB"""
+		self.mib.setAdmin("1.3.0", self.K)  # systemKeySize
 		self.mib.set("1.4.0", self.T)  # systemIntervalUpdate
 		self.mib.set("1.5.0", self.X)  # systemMaxNumberOfKeys
 		self.mib.set("1.6.0", self.V)  # systemKeysTimeToLive
@@ -85,7 +86,7 @@ class SNMPKeyShareAgent:
 			process_Z(self.Z)
 			self.expire_keys()
 			self.update_number_valid_keys()
-			time.sleep(self.T)
+			time.sleep(self.T/1000)
 
 	def get_id_from_oid(self, oid):
 		
@@ -97,15 +98,15 @@ class SNMPKeyShareAgent:
 		
 		"""Remove as chaves expiradas"""
 
-		current_date = datetime.now().strftime("%Y%m%d")
-		current_time = datetime.now().strftime("%H%M%S")
+		current_date = int(datetime.now().strftime("%Y%m%d"))
+		current_time = int(datetime.now().strftime("%H%M%S"))
 
 		mib = self.mib.mib.copy()
 		for entry in mib:
 			if entry.startswith("3.2.1.1"):
 				id = self.get_id_from_oid(entry)
-				key_expiration_date = self.mib.get(f"3.2.1.4.{id}")
-				key_expiration_time = self.mib.get(f"3.2.1.5.{id}")
+				key_expiration_date = int(self.mib.get(f"3.2.1.4.{id}"))
+				key_expiration_time = int(self.mib.get(f"3.2.1.5.{id}"))
 				if key_expiration_date < current_date or (key_expiration_date == current_date and key_expiration_time < current_time):
 					self.mib.remove_entry_from_dataTableGeneratedKeys(entry)
 
@@ -139,14 +140,14 @@ class SNMPKeyShareAgent:
 		"""Calcula a data de expiração de uma chave"""	
 
 		new_date = datetime.now() + timedelta(seconds=self.V)
-		return new_date.strftime("%Y%m%d")
+		return int(new_date.strftime("%Y%m%d"))
 
 	def calculate_key_expiration_time(self):
 
 		"""Calcula o tempo de expiração de uma chave"""
 
 		new_time = datetime.now() + timedelta(seconds=self.V)
-		return new_time.strftime("%H%M%S")
+		return int(new_time.strftime("%H%M%S"))
 	
 	def check_limits(self):
 		
@@ -161,7 +162,7 @@ class SNMPKeyShareAgent:
 		"""Gera e atualiza uma chave"""
 		
 		if self.check_limits():
-			key = generate_key(self.Z, self.num_updates)
+			key = generate_key(self.Z, self.num_updates, self.mib.get("2.2.0"), self.mib.get("2.3.0"))
 
 			self.num_updates += 1
 			key_expiration_date = self.calculate_key_expiration_date()
@@ -280,7 +281,7 @@ class SNMPKeyShareAgent:
 						R.append((oid, e))
 						NR += 1
 			if NR == 0:
-				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=[])
+				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=1, R=[(0, 0)])
 			else:
 				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
 

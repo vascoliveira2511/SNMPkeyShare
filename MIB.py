@@ -22,9 +22,9 @@ class SNMPKeyShareMIB:
 		current_datetime = datetime.now()
 
 		self.mib = {
-			"1.1.0": InstanceData("RO", "Str", current_datetime.strftime("%Y%m%d")),  # systemRestartDate
-			"1.2.0": InstanceData("RO", "Str", current_datetime.strftime("%H%M%S")),  # systemRestartTime
-			"1.3.0": InstanceData("RO", "Int", 1024),  # systemKeySize
+			"1.1.0": InstanceData("RO", "Int", int(current_datetime.strftime("%Y%m%d"))),  # systemRestartDate
+			"1.2.0": InstanceData("RO", "Int", int(current_datetime.strftime("%H%M%S"))),  # systemRestartTime
+			"1.3.0": InstanceData("RO", "Int", 10),  # systemKeySize
 			"1.4.0": InstanceData("RW", "Int", 0),  # systemIntervalUpdate
 			"1.5.0": InstanceData("RW", "Int", 0),  # systemMaxNumberOfKeys
 			"1.6.0": InstanceData("RW", "Int", 3600),  # systemKeysTimeToLive
@@ -50,8 +50,8 @@ class SNMPKeyShareMIB:
 		self.mib[f"3.2.1.1.{current_key_id}"] = InstanceData("RO", "Int", current_key_id)  # keyId
 		self.mib[f"3.2.1.2.{current_key_id}"] = InstanceData("RO", "Str", key)  # keyValue
 		self.mib[f"3.2.1.3.{current_key_id}"] = InstanceData("RO", "Str", KeyRequester)  # KeyRequester
-		self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Str", key_expiration_date)  # keyExpirationDate
-		self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Str", key_expiration_time)  # keyExpirationTime
+		self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_date)  # keyExpirationDate
+		self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_time)  # keyExpirationTime
 		self.mib[f"3.2.1.6.{current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
 		oid = f"3.2.1.6.{current_key_id}"
 		return oid, key_visibility
