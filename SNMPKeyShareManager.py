@@ -104,8 +104,8 @@ def main():
 	V = config_parameters['V']
 	port = config_parameters['udp_port']
 	manager = SNMPKeyShareManager(V)
+
 	ip = "127.0.0.1"
-	
 	try:
 		while True:
 			try:
