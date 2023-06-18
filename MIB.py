@@ -66,9 +66,9 @@ class SNMPKeyShareMIB:
 
 		"""Remove uma entrada da tabela de dados"""
 
-		id = self.get_id_from_oid(oid)
+		ident = self.get_id_from_oid(oid)
 		for i in range(1, 7):
-			del self.mib[f"3.2.1.{i}.{id}"]
+			del self.mib[f"3.2.1.{i}.{ident}"]
 
 	def get(self, oid):
 
