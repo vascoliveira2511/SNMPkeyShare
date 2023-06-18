@@ -100,7 +100,8 @@ class SNMPKeyShareAgent:
 		current_date = datetime.now().strftime("%Y%m%d")
 		current_time = datetime.now().strftime("%H%M%S")
 
-		for entry in self.mib.mib:
+		mib = self.mib.mib.copy()
+		for entry in mib:
 			if entry.startswith("3.2.1.1"):
 				id = self.get_id_from_oid(entry)
 				key_expiration_date = self.mib.get(f"3.2.1.4.{id}")
@@ -304,7 +305,8 @@ class SNMPKeyShareAgent:
 
 		try:
 			while True:
-				data, self.addr = sock.recvfrom(1024)
+				data, addr = sock.recvfrom(1024)
+				self.addr = addr[0]  # use ip only
 
 				# Usar pickle para desserializar os dados
 				pdu = pickle.loads(data)
@@ -314,7 +316,7 @@ class SNMPKeyShareAgent:
 				# Usar pickle para serializar o response_pdu
 				response_pdu = pickle.dumps(response_pdu)
 
-				sock.sendto(response_pdu, self.addr)
+				sock.sendto(response_pdu, addr)
 		except KeyboardInterrupt:
 			print("O agente foi terminado pelo utilizador.")
 
