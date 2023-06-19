@@ -9,12 +9,12 @@ class SNMPKeySharePDU:
 
 		"""Construtor da classe"""
 
-		if R is None:
-			R = []
-		if L_or_W is None:
-			L_or_W = []
-		if Q is None:
-			Q = []
+		if R is None: # Se a lista de erros for None
+			R = [] # Inicializar a lista de erros
+		if L_or_W is None: # Se a lista de instâncias for None
+			L_or_W = [] # Inicializar a lista de instâncias
+		if Q is None: # Se a lista de parâmetros for None
+			Q = [] # Inicializar a lista de parâmetros
 
 		self.S = S  # Identificação do modelo de segurança
 		self.NS = NS  # Número de parâmetros necessários à implementação dos mecanismos de segurança
@@ -33,14 +33,14 @@ class SNMPKeySharePDU:
 
 		"""Serializar o PDU para uma string usando pickle"""
 
-		return pickle.dumps(self)
+		return pickle.dumps(self) # Serializar o PDU
 
 	@staticmethod
 	def deserialize(data):
 
 		"""Deserializar uma string para um PDU usando pickle"""
 
-		return pickle.loads(data)
+		return pickle.loads(data) # Deserializar o PDU
 
 	def __str__(self):
 

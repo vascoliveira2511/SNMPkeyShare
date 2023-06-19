@@ -6,9 +6,9 @@ class InstanceData:
 	""" Classe que representa os dados de uma instância da MIB """
 
 	def __init__(self, access_type, instance_type, value):
-		self.access_type = access_type
-		self.instance_type = instance_type
-		self.value = value
+		self.access_type = access_type # RO = Read Only, RW = Read Write
+		self.instance_type = instance_type # Int = Integer, Str = String
+		self.value = value # Valor da instância
 
 
 class SNMPKeyShareMIB:
@@ -19,7 +19,7 @@ class SNMPKeyShareMIB:
 
 		""" Construtor da classe """
 
-		current_datetime = datetime.now()
+		current_datetime = datetime.now() # Data e hora atuais
 
 		self.mib = {
 			"1.1.0": InstanceData("RO", "Int", int(current_datetime.strftime("%Y%m%d"))),  # systemRestartDate
@@ -53,82 +53,94 @@ class SNMPKeyShareMIB:
 		self.mib[f"3.2.1.4.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_date)  # keyExpirationDate
 		self.mib[f"3.2.1.5.{current_key_id}"] = InstanceData("RO", "Int", key_expiration_time)  # keyExpirationTime
 		self.mib[f"3.2.1.6.{current_key_id}"] = InstanceData("RO", "Int", key_visibility)  # keyVisibility (0 = invisible, 1 = visible to requester, 2 = visible to all)
-		oid = f"3.2.1.6.{current_key_id}"
-		return oid, key_visibility
+		oid = f"3.2.1.6.{current_key_id}" # keyVisibility
+		return oid, key_visibility # Retorna o OID e o valor da visibilidade da chave
 
 	def get_id_from_oid(self, oid):
 
 		"""Retorna o ID de uma chave a partir do OID"""
 
-		return oid.split(".")[-1]
+		return oid.split(".")[-1] # Retorna o último elemento do OID
 
 	def remove_entry_from_dataTableGeneratedKeys(self, oid):
 
 		"""Remove uma entrada da tabela de dados"""
 
-		id = self.get_id_from_oid(oid)
-		for i in range(1, 7):
-			del self.mib[f"3.2.1.{i}.{id}"]
+		ident = self.get_id_from_oid(oid) # Identificador da entrada
+		for i in range(1, 7): # Para cada coluna da entrada
+			del self.mib[f"3.2.1.{i}.{ident}"] # Remover a entrada
 
 	def get(self, oid):
 
 		"""Retorna o valor de uma instância da MIB"""
 
-		if oid not in self.mib:
-			raise ValueError(f"O OID {oid} não existe.")
-		return self.mib[oid].value
+		if oid not in self.mib: # Se o OID não existir
+			raise ValueError(f"O OID {oid} não existe.") # Lançar uma exceção
+		return self.mib[oid].value # Retornar o valor da instância
 
 	def get_next(self, oid, current_key_id=None):
 
 		"""Retorna o próximo OID e o seu valor"""
 
-		if oid not in self.mib:
-			raise ValueError(f"O OID {oid} não existe.")
+		if oid not in self.mib: # Se o OID não existir
+			raise ValueError(f"O OID {oid} não existe.") # Lançar uma exceção
 
-		keys = list(self.mib.keys())
-		idx = keys.index(oid)
+		keys = list(self.mib.keys()) # Lista de OIDs
+		idx = keys.index(oid) # Índice do OID
 
-		if idx == len(keys) - 1:
-			raise ValueError(f"O OID {oid} é o último OID na MIB.")
+		if idx == len(keys) - 1: # Se o OID for o último
+			raise ValueError(f"O OID {oid} é o último OID na MIB.") # Lançar uma exceção
 
-		if current_key_id is not None:
-			if current_key_id != self.get_id_from_oid(oid):
-				raise ValueError(f"O ID {current_key_id} não pertence ao OID {oid}.")
+		if current_key_id is not None: # Se o ID da chave atual for especificado
+			if current_key_id != self.get_id_from_oid(oid): # Se o ID da chave atual não for o mesmo que o ID da chave atual
+				raise ValueError(f"O ID {current_key_id} não pertence ao OID {oid}.") # Lançar uma exceção
 
-		next_oid = keys[idx + 1]
-		return next_oid, self.mib[next_oid].value
+		next_oid = keys[idx + 1] # Próximo OID
+		return next_oid, self.mib[next_oid].value # Retornar o próximo OID e o seu valor
 
 	def set(self, oid, value):
 
 		"""Define o valor de uma instância da MIB"""
 
-		if oid not in self.mib:
-			raise ValueError(f"O OID {oid} não existe.")
+		if oid not in self.mib: # Se o OID não existir
+			raise ValueError(f"O OID {oid} não existe.") # Lançar uma exceção
 		
-		if self.mib[oid].access_type == "RO":
-			raise ValueError(f"O OID {oid} é de leitura apenas.")
+		if self.mib[oid].access_type == "RO": # Se o OID for de leitura apenas
+			raise ValueError(f"O OID {oid} é de leitura apenas.") # Lançar uma exceção
 		
-		target_type = self.mib[oid].instance_type.casefold()
+		target_type = self.mib[oid].instance_type.casefold() # Tipo de valor esperado
 
-		if target_type != type(value).__name__.casefold():
+		if target_type != type(value).__name__.casefold(): # Se o tipo de valor não for o esperado
 
 			# Tentativa de conversão do tipo de valor
 			try:
-				if target_type == "int".casefold():
-					value = int(value)
-				elif target_type == "Str".casefold():
-					value = str(value)
-			except ValueError:
-				raise ValueError(f"Não foi possível converter o tipo de valor {type(value)} para {target_type}.")
+				if target_type == "int".casefold(): # Se o tipo de valor for inteiro
+					value = int(value) # Converter para inteiro
+				elif target_type == "Str".casefold(): # Se o tipo de valor for string
+					value = str(value) # Converter para string
+			except ValueError: # Se não for possível converter o tipo de valor
+				raise ValueError(f"Não foi possível converter o tipo de valor {type(value)} para {target_type}.") # Lançar uma exceção
 
-		self.mib[oid].value = value
+		self.mib[oid].value = value # Definir o valor da instância
 
 	def setAdmin(self, oid, value):
 
 		"""Define o valor de uma instância da MIB sem verificar o acesso"""
 
-		if oid not in self.mib:
-			raise ValueError(f"O OID {oid} não existe.")
-		if self.mib[oid].instance_type.casefold() != type(value).__name__.casefold():
-			raise ValueError(f"O OID {oid} é do tipo {self.mib[oid].instance_type}. Recebi {type(value).__name__}.")
-		self.mib[oid].value = value
+		if oid not in self.mib: # Se o OID não existir
+			raise ValueError(f"O OID {oid} não existe.") # Lançar uma exceção
+		
+		target_type = self.mib[oid].instance_type.casefold() # Tipo de valor esperado
+
+		if target_type != type(value).__name__.casefold(): # Se o tipo de valor não for o esperado
+
+			# Tentativa de conversão do tipo de valor
+			try:
+				if target_type == "int".casefold(): # Se o tipo de valor for inteiro
+					value = int(value) # Converter para inteiro
+				elif target_type == "Str".casefold(): # Se o tipo de valor for string
+					value = str(value) # Converter para string
+			except ValueError: # Se não for possível converter o tipo de valor
+				raise ValueError(f"Não foi possível converter o tipo de valor {type(value)} para {target_type}.") # Lançar uma exceção
+
+		self.mib[oid].value = value # Definir o valor da instância
