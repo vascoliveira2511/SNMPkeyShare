@@ -30,17 +30,10 @@ class SNMPKeyShareManager:
 
 		self.V = V
 		self.requests = {}
-		self.last_request_time = {}
 
 	def snmpkeyshare_get(self, P, NL, L, agent_ip, agent_port):
 
 		"""Envia um pedido snmpkeyshare-get para o agente SNMPKeyShare"""	
-
-		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.V:
-			raise ValueError(
-				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.V} segundos.")
-
-		self.last_request_time[P] = time.time()
 
 		pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=1, NL_or_NW=NL, L_or_W=L, NR=0, R=[])
 
@@ -68,11 +61,6 @@ class SNMPKeyShareManager:
 
 		"""Envia um pedido snmpkeyshare-set para o agente SNMPKeyShare"""
 
-		if P in self.last_request_time and (time.time() - self.last_request_time[P]) < self.V:
-			raise ValueError(
-				f"Não é permitido enviar outro pedido com o mesmo P ({P}) durante {self.V} segundos.")
-
-		self.last_request_time[P] = time.time()
 		pdu = SNMPKeySharePDU(S=0, NS=0, Q=[], P=P, Y=2, NL_or_NW=NW, L_or_W=W, NR=0, R=[])
 
 		# Enviar o PDU para o agente usando comunicação UDP

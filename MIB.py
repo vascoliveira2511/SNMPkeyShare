@@ -104,10 +104,23 @@ class SNMPKeyShareMIB:
 
 		if oid not in self.mib:
 			raise ValueError(f"O OID {oid} não existe.")
+		
 		if self.mib[oid].access_type == "RO":
 			raise ValueError(f"O OID {oid} é de leitura apenas.")
-		if self.mib[oid].instance_type.casefold() != type(value).__name__.casefold():
-			raise ValueError(f"O OID {oid} é do tipo {self.mib[oid].instance_type}. Recebi {type(value).__name__}.")
+		
+		target_type = self.mib[oid].instance_type.casefold()
+
+		if target_type != type(value).__name__.casefold():
+
+			# Tentativa de conversão do tipo de valor
+			try:
+				if target_type == "int".casefold():
+					value = int(value)
+				elif target_type == "Str".casefold():
+					value = str(value)
+			except ValueError:
+				raise ValueError(f"Não foi possível converter o tipo de valor {type(value)} para {target_type}.")
+
 		self.mib[oid].value = value
 
 	def setAdmin(self, oid, value):

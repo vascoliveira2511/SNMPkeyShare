@@ -54,6 +54,8 @@ class SNMPKeyShareAgent:
 
 		self.set_mib_initial_values()
 
+		self.last_request_times = {}
+
 	def set_mib_initial_values(self):
 		
 		"""Define os valores iniciais da MIB"""
@@ -139,14 +141,14 @@ class SNMPKeyShareAgent:
 
 		"""Calcula a data de expiração de uma chave"""	
 
-		new_date = datetime.now() + timedelta(seconds=self.V)
+		new_date = datetime.now() + timedelta(seconds=self.mib.get("1.6.0"))
 		return int(new_date.strftime("%Y%m%d"))
 
 	def calculate_key_expiration_time(self):
 
 		"""Calcula o tempo de expiração de uma chave"""
 
-		new_time = datetime.now() + timedelta(seconds=self.V)
+		new_time = datetime.now() + timedelta(seconds=self.mib.get("1.6.0"))
 		return int(new_time.strftime("%H%M%S"))
 	
 	def check_limits(self):
@@ -201,99 +203,113 @@ class SNMPKeyShareAgent:
 
 		# Se o PDU recebido for um snmpkeyshare-get
 
-		if Y == 1:
-			L = []
-			for pair in L_or_W:
-				oid, n = pair
-				if n == 0:
-					if oid.startswith("3.2.1."):
-						try:
-							self.get_key_info(oid, self.addr)
-							value = self.mib.get(oid)
-							L.append((oid, value))
-						except ValueError as e:
-							R.append((oid, e))
-							NR += 1
+		current_time = time.time()
+		last_request_time = self.last_request_times.get(P)
+		try:
+			if last_request_time is not None and current_time - last_request_time < self.V:
+				raise ValueError(f"Requisição {P} foi feita há menos de {self.V} segundos")
+			else:
+				if Y == 1:
+					L = []
+					for pair in L_or_W:
+						oid, n = pair
+						if n == 0:
+							if oid.startswith("3.2.1."):
+								try:
+									self.get_key_info(oid, self.addr)
+									value = self.mib.get(oid)
+									L.append((oid, value))
+								except ValueError as e:
+									R.append((oid, e))
+									NR += 1
+							else:
+								try:
+									value = self.mib.get(oid)
+									L.append((oid, value))
+								except ValueError as e:
+									R.append((oid, e))
+									NR += 1
+						else:
+							if oid.startswith("3.2.1."):
+								try:
+									self.get_key_info(oid, self.addr)
+									value = self.mib.get(oid)
+									L.append((oid, value))
+								except ValueError as e:
+									R.append((oid, e))
+									NR += 1
+							else:
+								try:
+									value = self.mib.get(oid)
+									L.append((oid, value))
+								except ValueError as e:
+									R.append((oid, e))
+									NR += 1
+							for i in range(n):
+								if oid.startswith("3.2.1."):
+									try:
+										self.get_key_info(oid, self.addr)
+										oid, value = self.mib.get_next(oid, self.get_id_from_oid(oid))
+										L.append((oid, value))
+									except ValueError as e:
+										R.append((oid, e))
+										NR += 1
+								else:
+									try:
+										oid, value = self.mib.get_next(oid)
+										L.append((oid, value))
+									except ValueError as e:
+										R.append((oid, e))
+										NR += 1
+					if NR == 0:
+						self.last_request_times[P] = current_time
+						return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
 					else:
-						try:
-							value = self.mib.get(oid)
-							L.append((oid, value))
-						except ValueError as e:
-							R.append((oid, e))
-							NR += 1
-				else:
-					if oid.startswith("3.2.1."):
-						try:
-							self.get_key_info(oid, self.addr)
-							value = self.mib.get(oid)
-							L.append((oid, value))
-						except ValueError as e:
-							R.append((oid, e))
-							NR += 1
-					else:
-						try:
-							value = self.mib.get(oid)
-							L.append((oid, value))
-						except ValueError as e:
-							R.append((oid, e))
-							NR += 1
-					for i in range(n):
-						if oid.startswith("3.2.1."):
+						self.last_request_times[P] = current_time
+						return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=R)
+
+				# Se o PDU recebido for um snmpkeyshare-set
+
+				elif Y == 2:
+					W = []
+					for pair in L_or_W:
+						oid, value = pair
+						if oid == "3.2.1.6.0":
 							try:
-								self.get_key_info(oid, self.addr)
-								oid, value = self.mib.get_next(oid, self.get_id_from_oid(oid))
-								L.append((oid, value))
+								key, key_expiration_date, key_expiration_time = self.generate_and_update_key()
+								oid, value = self.mib.add_entry_to_dataTableGeneratedKeys(self.current_key_id, key, self.addr, key_expiration_date, key_expiration_time, value)
+								self.current_key_id += 1
+								W.append((oid, value))
 							except ValueError as e:
 								R.append((oid, e))
 								NR += 1
 						else:
 							try:
-								oid, value = self.mib.get_next(oid)
-								L.append((oid, value))
+								self.mib.set(oid, value)
+								W.append((oid, value))
 							except ValueError as e:
 								R.append((oid, e))
 								NR += 1
-			if NR == 0:
-				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=[])
-			else:
-				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(L), L_or_W=L, NR=NR, R=R)
+					if NR == 0:
+						self.last_request_times[P] = current_time
+						return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=1, R=[(0, 0)])
+					else:
+						self.last_request_times[P] = current_time
+						return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
 
-		# Se o PDU recebido for um snmpkeyshare-set
+				# Se o PDU recebido for um snmpkeyshare-response
 
-		elif Y == 2:
-			W = []
-			for pair in L_or_W:
-				oid, value = pair
-				if oid == "3.2.1.6.0":
-					try:
-						key, key_expiration_date, key_expiration_time = self.generate_and_update_key()
-						oid, value = self.mib.add_entry_to_dataTableGeneratedKeys(self.current_key_id, key, self.addr, key_expiration_date, key_expiration_time, value)
-						self.current_key_id += 1
-						W.append((oid, value))
-					except ValueError as e:
-						R.append((oid, e))
-						NR += 1
+				elif Y == 0:
+					return None
+
+				# Se o PDU recebido for inválido
+
 				else:
-					try:
-						self.mib.set(oid, value)
-						W.append((oid, value))
-					except ValueError as e:
-						R.append((oid, e))
-						NR += 1
-			if NR == 0:
-				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=1, R=[(0, 0)])
-			else:
-				return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=len(W), L_or_W=W, NR=NR, R=R)
-
-		# Se o PDU recebido for um snmpkeyshare-response
-
-		elif Y == 0:
-			return None
-
-		# Se o PDU recebido for inválido
-
-		else:
-			raise ValueError(f"O valor de Y ({Y}) é inválido.")
+					raise ValueError(f"O valor de Y ({Y}) é inválido.")
+		except ValueError as e:
+			R.append((0, e))
+			NR += 1
+			return SNMPKeySharePDU(P=P, Y=0, NL_or_NW=0, L_or_W=[], NR=NR, R=R)
 
 	def serve(self, ip, port):
 
@@ -337,9 +353,12 @@ def main():
 	ip = "127.0.0.1"
 	port = udp_port
 	agent = SNMPKeyShareAgent(K, M, T, V, X, None)
-	agent.start_key_update_thread()
-	agent.serve(ip, port)
-	agent.stop_key_update_thread()
+	try:
+		agent.start_key_update_thread()
+		agent.serve(ip, port)
+	except KeyboardInterrupt:
+		agent.stop_key_update_thread()
+		print("O agente foi terminado pelo utilizador.")
 
 
 if __name__ == "__main__":
