@@ -62,18 +62,21 @@ class SNMPKeyShareAgent:
 		self.last_request_times = {} # Dicionário que guarda os tempos das últimas requisições
 
 	def save_mib_state(self):
+
 		"""Guarda o estado atual da MIB para um arquivo"""
 
 		with open('mib_state.pkl', 'wb') as f: # Abrir o arquivo mib_state.pkl para escrita
 			pickle.dump(self.mib, f) # Serializar a MIB e guardá-la no arquivo
 
 	def load_mib_state(self):
+
 		"""Carrega o estado anterior da MIB de um arquivo, se disponível"""
+
 		try:
 			with open('mib_state.pkl', 'rb') as f: # Abrir o arquivo mib_state.pkl para leitura
 				self.mib = pickle.load(f) # Deserializar a MIB e guardá-la na variável mib
 		except FileNotFoundError: # Se o arquivo não existir
-			print("Não foi encontrado nenhum estado da MIB anterior.") # Imprimir uma mensagem de erro
+			print("Não foi encontrado nenhum estado da MIB anterior.\n") # Imprimir uma mensagem de erro
 
 	def set_mib_initial_values(self):
 		
@@ -93,7 +96,9 @@ class SNMPKeyShareAgent:
 		self.key_update_thread.start() # Iniciar a thread
 
 	def stop_key_update_thread(self):
+
 		"""Para a thread que atualiza as chaves"""
+
 		self.running = False  # Definir a flag running como False
 		self.key_update_thread.join() # Esperar que a thread termine
 		self.save_mib_state()  # Salvar o estado da MIB
