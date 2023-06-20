@@ -40,21 +40,40 @@ class SNMPKeyShareAgent:
 		self.key_update_thread = None # Thread que atualiza as chaves
 
 		self.start_time = time.time() # Tempo de início do agente
-		self.mib = mib if mib is not None else SNMPKeyShareMIB() # MIB do agente
-		self.running = False # Flag que indica se o agente está a correr
+		self.mib = mib
 		self.T = T # Intervalo de tempo entre atualizações
 		self.K = K # Tamanho da chave
 		self.M = M # Matriz de parâmetros
 		self.V = V # Intervalo de tempo para o qual o agente espera por uma resposta
 		self.X = X # Número máximo de chaves geradas
 		self.Z = generate_matrices(list(map(int, M)), K, use_zs=False) # Matriz Z
+		self.load_mib_state()  # Carregar o estado anterior da MIB
+		if self.mib is None: # Se não houver um estado anterior da MIB
+			self.mib = SNMPKeyShareMIB() # Criar uma nova MIB
+			self.set_mib_initial_values() # Definir os valores iniciais da MIB
+		else:
+			self.mib.setAdmin("1.1.0", int(datetime.now().strftime("%Y%m%d"))) # Obter a data atual
+			self.mib.setAdmin("1.2.0", int(datetime.now().strftime("%H%M%S"))) # Obter a hora atual
+		self.running = False # Flag que indica se o agente está a correr
 		self.num_updates = 0 # Número de atualizações
 		self.current_key_id = 1 # ID da chave atual
 		self.addr = None # Endereço do gestor
 
-		self.set_mib_initial_values() # Definir os valores iniciais da MIB
-
 		self.last_request_times = {} # Dicionário que guarda os tempos das últimas requisições
+
+	def save_mib_state(self):
+		"""Guarda o estado atual da MIB para um arquivo"""
+
+		with open('mib_state.pkl', 'wb') as f: # Abrir o arquivo mib_state.pkl para escrita
+			pickle.dump(self.mib, f) # Serializar a MIB e guardá-la no arquivo
+
+	def load_mib_state(self):
+		"""Carrega o estado anterior da MIB de um arquivo, se disponível"""
+		try:
+			with open('mib_state.pkl', 'rb') as f: # Abrir o arquivo mib_state.pkl para leitura
+				self.mib = pickle.load(f) # Deserializar a MIB e guardá-la na variável mib
+		except FileNotFoundError: # Se o arquivo não existir
+			print("Não foi encontrado nenhum estado da MIB anterior.") # Imprimir uma mensagem de erro
 
 	def set_mib_initial_values(self):
 		
@@ -74,11 +93,11 @@ class SNMPKeyShareAgent:
 		self.key_update_thread.start() # Iniciar a thread
 
 	def stop_key_update_thread(self):
-
 		"""Para a thread que atualiza as chaves"""
- 
-		self.running = False # Definir a flag running como False
+		self.running = False  # Definir a flag running como False
 		self.key_update_thread.join() # Esperar que a thread termine
+		self.save_mib_state()  # Salvar o estado da MIB
+
 
 	def key_update_loop(self):
 
@@ -326,25 +345,27 @@ class SNMPKeyShareAgent:
 
 		print(f"Agente SNMPKeyShare a ouvir no endereço {ip}:{port}") # Imprimir uma mensagem de sucesso
 
-		try:
+		while self.running: # Enquanto a flag running for True
+					
+					if not self.running:  # Verifica se a flag 'running' ainda é True
+						break
 
-			while True: # Enquanto o agente estiver a correr
-				data, addr = sock.recvfrom(1024) # Esperar por dados
-				self.addr = addr[0]  # Endereço do gestor
+					data, addr = sock.recvfrom(1024) # Esperar por dados
 
-				# Usar pickle para desserializar os dados
-				pdu = pickle.loads(data)
+					if not self.running:  # Verifica se a flag 'running' ainda é True
+						break
 
-				response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y) # Processar o PDU e gerar a resposta
+					self.addr = addr[0]  # Endereço do gestor
 
-				# Usar pickle para serializar o response_pdu
-				response_pdu = pickle.dumps(response_pdu)
+					# Usar pickle para desserializar os dados
+					pdu = pickle.loads(data)
 
-				sock.sendto(response_pdu, addr) # Enviar a resposta para o gestor
+					response_pdu = self.snmpkeyshare_response(pdu.P, pdu.NL_or_NW, pdu.L_or_W, pdu.Y) # Processar o PDU e gerar a resposta
 
-		except KeyboardInterrupt: # Se o agente for terminado pelo utilizador
-			print("O agente foi terminado pelo utilizador.") 
+					# Usar pickle para serializar o response_pdu
+					response_pdu = pickle.dumps(response_pdu)
 
+					sock.sendto(response_pdu, addr) # Enviar a resposta para o gestor
 
 def main():
 
@@ -364,7 +385,7 @@ def main():
 	try: 
 		agent.start_key_update_thread() # Iniciar a thread que atualiza as chaves
 		agent.serve(ip, port) # Iniciar o agente
-	except KeyboardInterrupt: # Se o agente for terminado pelo utilizador
+	except KeyboardInterrupt:
 		agent.stop_key_update_thread() # Parar a thread que atualiza as chaves
 		print("O agente foi terminado pelo utilizador.") 
 

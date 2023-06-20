@@ -1,7 +1,6 @@
 import configparser
 import pickle
 import socket
-import time
 from SNMPKeySharePDU import SNMPKeySharePDU
 
 
