@@ -27,8 +27,7 @@ class SNMPKeyShareManager:
 
 		"""Construtor da classe"""
 
-		self.V = V # Intervalo de tempo para o qual o gestor espera por uma resposta
-		self.requests = {} # Dicionário que guarda os pedidos enviados e as respostas recebidas
+		self.V = V # Intervalo de tempo para o qual o gestor espera por uma respostaS
 
 	def snmpkeyshare_get(self, P, NL, L, agent_ip, agent_port):
 
