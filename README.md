@@ -12,7 +12,7 @@ Este é um trabalho prático no âmbito da disciplina de Gestão e Segurança de
 git clone https://github.com/yourusername/SNMPKeyShare.git
 ```
 
-3. Navegue até a direotría SNMPKeyShare:
+3. Navegue até a diretoria SNMPKeyShare:
 
 ```bash
 cd SNMPKeyShare
